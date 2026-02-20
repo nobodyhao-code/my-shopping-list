@@ -1,115 +1,84 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const cors = require('cors');
-
+const path = require('path');
 const app = express();
+
 app.use(express.json());
-app.use(cors());
-app.use(express.static('public'));
+app.use(express.static('public')); // 确保你的 HTML 文件在 public 文件夹里
 
-const JWT_SECRET = 'grocery_secret_key';
+// 1. 连接数据库 (优先使用 Render 环境变量)
+const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/grocery_app';
+mongoose.connect(mongoURI)
+    .then(() => console.log('数据库连接成功！'))
+    .catch(err => console.error('数据库连接失败:', err));
 
-mongoose.connect('mongodb://localhost:27017/grocery_app')
-  .then(() => console.log('数据库已连接'))
-  .catch(err => console.error('DB Error:', err));
-
-const User = mongoose.model('User', new mongoose.Schema({
-    username: { type: String, required: true },
-    email:    { type: String, required: true, unique: true },
+// 2. 定义数据模型
+const UserSchema = new mongoose.Schema({
+    username: { type: String, unique: true, required: true },
     password: { type: String, required: true }
-}));
+});
+const User = mongoose.model('User', UserSchema);
 
-const Product = mongoose.model('Product', new mongoose.Schema({
+const ItemSchema = new mongoose.Schema({
+    username: String,
     name: String,
-    price: Number,
-    category: String,
-    location: String,
-    barcode: String
-}));
+    completed: { type: Boolean, default: false }
+});
+const Item = mongoose.model('Item', ItemSchema);
 
-const ShoppingList = mongoose.model('ShoppingList', new mongoose.Schema({
-    userId: String,
-    items: [{
-        productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
-        quantity: Number,
-        isChecked: { type: Boolean, default: false }
-    }]
-}));
-
-const authMiddleware = (req, res, next) => {
-    const token = req.header('Authorization');
-    if (!token) return res.status(401).json({ message: '无令牌' });
+// 3. 注册接口
+app.post('/register', async (req, res) => {
     try {
-        const decoded = jwt.verify(token.replace('Bearer ', ''), JWT_SECRET);
-        req.user = decoded;
-        next();
-    } catch (e) {
-        res.status(400).json({ message: '令牌无效' });
+        const { username, password } = req.body;
+        if (!username || !password) return res.status(400).send('用户名和密码不能为空');
+        
+        const existingUser = await User.findOne({ username });
+        if (existingUser) return res.status(400).send('用户名已存在');
+
+        const newUser = new User({ username, password });
+        await newUser.save();
+        res.send('注册成功！现在可以去登录了');
+    } catch (error) {
+        res.status(500).send('注册出错: ' + error.message);
     }
-};
-
-app.post('/api/auth/register', async (req, res) => {
-    try {
-        const { username, email, password } = req.body;
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const user = new User({ username, email, password: hashedPassword });
-        await user.save();
-        res.status(201).json({ message: '用户注册成功' });
-    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.post('/api/auth/login', async (req, res) => {
+// 4. 登录接口
+app.post('/login', async (req, res) => {
     try {
-        const { email, password } = req.body;
-        const user = await User.findOne({ email });
-        if (!user || !(await bcrypt.compare(password, user.password))) {
-            return res.status(400).json({ message: '凭证无效' });
+        const { username, password } = req.body;
+        const user = await User.findOne({ username, password });
+        if (user) {
+            res.json({ success: true, message: '登录成功' });
+        } else {
+            res.status(401).json({ success: false, message: '用户名或密码错误' });
         }
-        const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '1h' });
-        res.json({ token, userId: user._id });
-    } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-app.get('/api/products', async (req, res) => {
-    const { keyword } = req.query;
-    const query = keyword ? { name: { $regex: keyword, $options: 'i' } } : {};
-    const products = await Product.find(query);
-    res.json(products);
-});
-
-app.get('/api/list', authMiddleware, async (req, res) => {
-    const list = await ShoppingList.findOne({ userId: req.user.id }).populate('items.productId');
-    res.json(list || { items: [] });
-});
-
-app.post('/api/list/add', authMiddleware, async (req, res) => {
-    const { productId, quantity } = req.body;
-    let list = await ShoppingList.findOne({ userId: req.user.id });
-    if (!list) list = new ShoppingList({ userId: req.user.id, items: [] });
-    
-    const itemIndex = list.items.findIndex(p => p.productId.toString() === productId);
-    if (itemIndex > -1) {
-        list.items[itemIndex].quantity += quantity;
-    } else {
-        list.items.push({ productId, quantity });
+    } catch (error) {
+        res.status(500).send('登录出错');
     }
-    await list.save();
-    res.json(list);
 });
 
-app.get('/api/seed', async (req, res) => {
-    await Product.deleteMany({});
-    const products = [
-        { name: "Organic Milk", price: 1.50, category: "Dairy", location: "Aisle 1", barcode: "1001" },
-        { name: "Whole Wheat Bread", price: 2.20, category: "Bakery", location: "Aisle 2", barcode: "1002" },
-        { name: "Bananas (1kg)", price: 1.80, category: "Fruit", location: "Aisle 3", barcode: "1003" },
-        { name: "Coca Cola", price: 2.50, category: "Drinks", location: "Aisle 4", barcode: "1004" }
-    ];
-    await Product.insertMany(products);
-    res.json({ message: '测试数据已生成', products });
+// 5. 获取购物清单
+app.get('/items/:username', async (req, res) => {
+    const items = await Item.find({ username: req.params.username });
+    res.json(items);
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`服务器运行在端口 ${PORT}`));
+// 6. 添加物品
+app.post('/items', async (req, res) => {
+    const newItem = new Item(req.body);
+    await newItem.save();
+    res.json(newItem);
+});
+
+// 7. 删除物品
+app.delete('/items/:id', async (req, res) => {
+    await Item.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+});
+
+// 启动服务器
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => {
+    console.log(`服务器运行在端口 ${PORT}`);
+});

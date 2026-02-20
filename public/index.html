@@ -44,109 +44,53 @@
 </div>
 
 <script>
-    // 1. 登录功能
-    async function login() {
-        const email = document.getElementById('email').value;
+    const API_URL = ''; // 在 Render 上运行时，留空即可
+
+    async function register() {
+        const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
-        
-        const response = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-        });
 
-        const data = await response.json();
-        if (data.token) {
-            localStorage.setItem('token', data.token); // 关键：把令牌存入浏览器缓存
-            showList(); // 登录成功后直接加载清单
-        } else {
-            alert('登录失败，请检查账号密码');
+        if (!username || !password) {
+            alert('请填入用户名和密码');
+            return;
         }
-    }
 
-    // 2. 获取并渲染清单
-    async function showList() {
-        const token = localStorage.getItem('token');
-        const response = await fetch('/api/list', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        const data = await response.json();
-        
-        const listDiv = document.getElementById('items-list');
-        const container = document.getElementById('list-container');
-        const authSection = document.getElementById('auth-section');
-
-        listDiv.innerHTML = ''; // 清空旧列表
-        
-        if (data.items && data.items.length > 0) {
-            data.items.forEach(item => {
-                const product = item.productId;
-                listDiv.innerHTML += `
-                    <div class="item">
-                        <div class="item-info">
-                            <span class="item-name">${product.name}</span>
-                            <span class="item-loc">📍 位置: ${product.location}</span>
-                        </div>
-                        <span class="badge">x ${item.quantity}</span>
-                    </div>
-                `;
+        try {
+            const response = await fetch(`${API_URL}/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
             });
-        } else {
-            listDiv.innerHTML = '<p style="text-align:center; color:#999;">清单是空的，快去添加商品吧！</p>';
+
+            const result = await response.text();
+            alert(result); // 这里会弹出“注册成功”或“用户名已存在”
+        } catch (error) {
+            console.error('注册请求失败:', error);
+            alert('网络错误，请稍后再试');
         }
-
-        authSection.style.display = 'none'; // 隐藏登录框
-        container.style.display = 'block';   // 显示清单
     }
 
-    function logout() {
-        localStorage.removeItem('token');
-        location.reload();
-    }
+    async function login() {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
 
-    // 页面加载时检查是否已登录
-    if (localStorage.getItem('token')) {
-        showList();
-    }
+        try {
+            const response = await fetch(`${API_URL}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
 
-    // 3. 搜索商品
-    async function searchProducts() {
-        const query = document.getElementById('search-input').value;
-        const resDiv = document.getElementById('search-results');
-        
-        if (query.length < 2) { resDiv.style.display = 'none'; return; }
-
-        const response = await fetch(`/api/products?search=${query}`);
-        const products = await response.json();
-
-        resDiv.innerHTML = '';
-        resDiv.style.display = 'block';
-
-        products.forEach(p => {
-            resDiv.innerHTML += `
-                <div style="padding: 10px; border-bottom: 1px solid #eee; cursor: pointer;" onclick="addToItems('${p._id}')">
-                    <strong>${p.name}</strong> - €${p.price}
-                </div>
-            `;
-        });
-    }
-
-    // 4. 添加到清单
-    async function addToItems(productId) {
-        const token = localStorage.getItem('token');
-        await fetch('/api/list/add', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ productId, quantity: 1 })
-        });
-        
-        document.getElementById('search-results').style.display = 'none';
-        document.getElementById('search-input').value = '';
-        showList(); // 刷新列表
+            const data = await response.json();
+            if (data.success) {
+                localStorage.setItem('username', username);
+                window.location.href = 'list.html'; // 登录成功后跳转到清单页
+            } else {
+                alert(data.message);
+            }
+        } catch (error) {
+            alert('登录出错');
+        }
     }
 </script>
 
