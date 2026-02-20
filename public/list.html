@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shopping App</title>
+    <title>Shopping App / 完整购物平台</title>
     <style>
         :root { --primary: #ff5000; --bg: #f4f4f4; --text: #333; }
         body { font-family: sans-serif; background: var(--bg); margin: 0; padding-bottom: 60px; color: var(--text); }
@@ -77,6 +77,7 @@
 </div>
 
 <div class="container">
+    
     <div class="main-content" id="page-home">
         <div id="promotions"></div>
         <div class="product-grid" id="products"></div>
@@ -114,9 +115,11 @@
 <div id="toast" class="toast"></div>
 
 <script>
+    // Check if user is logged in / 检查用户是否已登录
     const username = localStorage.getItem('username');
     if (!username) window.location.href = 'index.html';
 
+    // Global variables / 全局变量
     let allProducts = [];
     let cartItems = [];
     let promoData = [];
@@ -125,31 +128,32 @@
     let currentLang = localStorage.getItem('lang') || 'zh';
     document.getElementById('lang-select').value = currentLang;
 
+    // UI Translation Dictionary / 界面翻译词典
     const dict = {
         zh: {
             search: '搜索商品...', home: '首页', cart: '购物车', out: '退出', total: '总计', checkout: '结算',
             name: '名称', price: '价格', stock: '库存', qty: '数量', asc: '升序', desc: '降序',
-            all: '所有分类', groceries: '食品杂货', beauty: '美妆', 'skin-care': '护肤', 'kitchen-accessories': '厨房用品',
+            all: '所有分类', groceries: '食品杂货', beauty: '美妆', 'skin-care': '护肤', 'kitchen-accessories': '厨房用品', beverages: '饮料',
             soldout: '已售罄', left: '余量', aisle: '📍 货架', added: '已加入购物车', remove: '移除',
             promoTitle: '实体店专享', promoDetail: '凭App前往 B-02 货架领取试吃品'
         },
         en: {
             search: 'Search products...', home: 'Home', cart: 'Cart', out: 'Logout', total: 'Total', checkout: 'Checkout',
             name: 'Name', price: 'Price', stock: 'Stock', qty: 'Quantity', asc: 'Ascending', desc: 'Descending',
-            all: 'All Categories', groceries: 'Groceries', beauty: 'Beauty', 'skin-care': 'Skin Care', 'kitchen-accessories': 'Kitchen',
+            all: 'All Categories', groceries: 'Groceries', beauty: 'Beauty', 'skin-care': 'Skin Care', 'kitchen-accessories': 'Kitchen', beverages: 'Beverages',
             soldout: 'Sold Out', left: 'Left', aisle: '📍 Aisle', added: 'Added to cart', remove: 'Remove',
             promoTitle: 'In-Store Exclusive', promoDetail: 'Claim a free sample at aisle B-02 with the App'
         },
         fi: {
             search: 'Hae tuotteita...', home: 'Koti', cart: 'Ostoskori', out: 'Kirjaudu ulos', total: 'Yhteensä', checkout: 'Kassalle',
             name: 'Nimi', price: 'Hinta', stock: 'Varasto', qty: 'Määrä', asc: 'Nouseva', desc: 'Laskeva',
-            all: 'Kaikki luokat', groceries: 'Päivittäistavarat', beauty: 'Kauneus', 'skin-care': 'Ihonhoito', 'kitchen-accessories': 'Keittiö',
+            all: 'Kaikki luokat', groceries: 'Päivittäistavarat', beauty: 'Kauneus', 'skin-care': 'Ihonhoito', 'kitchen-accessories': 'Keittiö', beverages: 'Juomat',
             soldout: 'Loppuunmyyty', left: 'Jäljellä', aisle: '📍 Hylly', added: 'Lisätty koriin', remove: 'Poista',
             promoTitle: 'Myymäläetu', promoDetail: 'Hae ilmainen näyte hyllyltä B-02 sovelluksella'
         }
     };
 
-    // 商品名词典替换器
+    // Product Name Translation Dictionary / 商品名称翻译词典
     const wordDict = {
         zh: {
             'Essence': '精华', 'Mascara': '睫毛膏', 'Lash': '睫毛', 'Princess': '公主',
@@ -157,10 +161,10 @@
             'Red': '红色', 'Lipstick': '口红', 'Nail Polish': '指甲油', 'Calvin Klein': 'CK',
             'Perfume': '香水', 'Fragrance': '香水', 'Eau De': '香水', 'Apple': '苹果',
             'Meat': '肉', 'Chicken': '鸡肉', 'Beef': '牛肉', 'Fish': '鱼', 'Pork': '猪肉',
-            'Milk': '牛奶', 'Cheese': '奶酪', 'Butter': '黄油', 'Bread': '面包', 'Rice': '大米',
-            'Juice': '果汁', 'Water': '水', 'Lemon': '柠檬', 'Strawberry': '草莓', 'Tomato': '西红柿',
+            'Fresh': '新鲜', 'Milk': '牛奶', 'Cheese': '奶酪', 'Butter': '黄油', 'Bread': '面包', 'Rice': '大米',
+            'Orange': '橙子', 'Juice': '果汁', 'Water': '水', 'Lemon': '柠檬', 'Strawberry': '草莓', 'Tomato': '西红柿',
             'Cucumber': '黄瓜', 'Eggs': '鸡蛋', 'Dog Food': '狗粮', 'Cat Food': '猫粮',
-            'Green': '绿色', 'Bell Pepper': '甜椒', 'Kiwi': '猕猴桃'
+            'Green': '绿色', 'Bell Pepper': '甜椒', 'Kiwi': '猕猴桃', 'Cola': '可乐', 'Soda': '汽水', 'Sprite': '雪碧'
         },
         fi: {
             'Essence': 'Eteerinen', 'Mascara': 'Ripsiväri', 'Lash': 'Ripsi', 'Princess': 'Prinsessa',
@@ -168,13 +172,14 @@
             'Red': 'Punainen', 'Lipstick': 'Huulipuna', 'Nail Polish': 'Kynsilakka', 'Calvin Klein': 'CK',
             'Perfume': 'Hajuvesi', 'Fragrance': 'Tuoksu', 'Eau De': 'Hajuvesi', 'Apple': 'Omena',
             'Meat': 'Liha', 'Chicken': 'Kana', 'Beef': 'Naudanliha', 'Fish': 'Kala', 'Pork': 'Sianliha',
-            'Milk': 'Maito', 'Cheese': 'Juusto', 'Butter': 'Voi', 'Bread': 'Leipä', 'Rice': 'Riisi',
-            'Juice': 'Mehu', 'Water': 'Vesi', 'Lemon': 'Sitruuna', 'Strawberry': 'Mansikka', 'Tomato': 'Tomaatti',
+            'Fresh': 'Tuore', 'Milk': 'Maito', 'Cheese': 'Juusto', 'Butter': 'Voi', 'Bread': 'Leipä', 'Rice': 'Riisi',
+            'Orange': 'Appelsiini', 'Juice': 'Mehu', 'Water': 'Vesi', 'Lemon': 'Sitruuna', 'Strawberry': 'Mansikka', 'Tomato': 'Tomaatti',
             'Cucumber': 'Kurkku', 'Eggs': 'Kananmunat', 'Dog Food': 'Koiranruoka', 'Cat Food': 'Kissanruoka',
-            'Green': 'Vihreä', 'Bell Pepper': 'Paprika', 'Kiwi': 'Kiivi'
+            'Green': 'Vihreä', 'Bell Pepper': 'Paprika', 'Kiwi': 'Kiivi', 'Cola': 'Kola', 'Soda': 'Sooda', 'Sprite': 'Sprite'
         }
     };
 
+    // Function to translate product names / 翻译商品名称的方法
     function translateName(name) {
         if (currentLang === 'en') return name;
         let translated = name;
@@ -186,6 +191,7 @@
         return translated;
     }
 
+    // Handle language change / 处理语言切换事件
     function changeLang() {
         currentLang = document.getElementById('lang-select').value;
         localStorage.setItem('lang', currentLang);
@@ -194,6 +200,7 @@
         applyCartFilters();
     }
 
+    // Update all UI text based on dictionary / 更新界面文本
     function updateUI() {
         const d = dict[currentLang];
         document.getElementById('search').placeholder = d.search;
@@ -221,10 +228,13 @@
         renderPromotions();
     }
 
+    // Initialize application / 初始化应用
     async function init() {
+        // Fetch promotions / 获取促销信息
         const promoRes = await fetch('/api/promotions');
         promoData = await promoRes.json();
 
+        // Fetch products / 获取商品列表
         const prodRes = await fetch('/api/products');
         allProducts = await prodRes.json();
         
@@ -233,12 +243,14 @@
         applyFilters();
     }
 
+    // Render promotion banners / 渲染促销横幅
     function renderPromotions() {
         document.getElementById('promotions').innerHTML = promoData.map(p => 
             `<div class="banner">${dict[currentLang][p.titleKey]} - ${dict[currentLang][p.detailKey]}</div>`
         ).join('');
     }
 
+    // Populate category dropdowns dynamically / 动态填充分类下拉菜单
     function populateCategories(elementId, dataArray) {
         const catSelect = document.getElementById(elementId);
         const currentVal = catSelect.value;
@@ -255,15 +267,20 @@
         if (currentVal && currentVal !== 'all') catSelect.value = currentVal;
     }
 
+    // Apply filters and sorting for Home page / 应用首页的筛选和排序逻辑
     function applyFilters() {
         const query = document.getElementById('search').value.toLowerCase();
         const category = document.getElementById('category-filter').value;
         const sortBy = document.getElementById('sort-by').value;
         const sortOrder = document.getElementById('sort-order').value;
 
+        // Filter by search / 搜索过滤
         let filtered = allProducts.filter(p => p.name.toLowerCase().includes(query) || translateName(p.name).toLowerCase().includes(query));
+        
+        // Filter by category / 分类过滤
         if (category !== 'all') filtered = filtered.filter(p => p.category === category);
 
+        // Apply sorting / 应用排序
         let mod = sortOrder === 'asc' ? 1 : -1;
         filtered.sort((a, b) => {
             if (sortBy === 'name') return translateName(a.name).localeCompare(translateName(b.name)) * mod;
@@ -275,6 +292,7 @@
         renderProducts(filtered);
     }
 
+    // Render product cards on Home page / 在首页渲染商品卡片
     function renderProducts(products) {
         const d = dict[currentLang];
         document.getElementById('products').innerHTML = products.map(p => {
@@ -305,6 +323,7 @@
         }).join('');
     }
 
+    // Fetch user cart items / 获取用户的购物车数据
     async function fetchCartData() {
         const res = await fetch(`/items/${username}`);
         cartItems = await res.json();
@@ -312,6 +331,7 @@
         applyCartFilters();
     }
 
+    // Apply filters and sorting for Cart page / 应用购物车的筛选和排序逻辑
     function applyCartFilters() {
         const category = document.getElementById('cart-category-filter').value;
         const sortBy = document.getElementById('cart-sort-by').value;
@@ -331,6 +351,7 @@
         renderCart(filtered);
     }
 
+    // Render cart items / 渲染购物车商品列表
     function renderCart(itemsToRender) {
         const d = dict[currentLang];
         
@@ -356,10 +377,12 @@
             </div>
         `}).join('');
         
+        // Calculate absolute total price / 计算购物车内所有商品的总价
         let absoluteTotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         document.getElementById('total-price').innerText = absoluteTotal.toFixed(2);
     }
 
+    // Show toast notification / 显示顶部提示信息
     function showToast(key) {
         const toast = document.getElementById('toast');
         toast.innerText = dict[currentLang][key] || key;
@@ -368,6 +391,7 @@
         toastTimeout = setTimeout(() => { toast.classList.remove('show'); }, 2000);
     }
 
+    // API Call: Add to cart / 调用 API：加入购物车
     async function addToCart(name, price, image, category) {
         await fetch('/items', {
             method: 'POST',
@@ -378,16 +402,19 @@
         showToast('added');
     }
 
+    // API Call: Update quantity / 调用 API：更新数量
     async function updateQty(id, action) {
         await fetch(`/items/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }) });
         await fetchCartData();
     }
 
+    // API Call: Delete item / 调用 API：移除商品
     async function del(id) {
         await fetch(`/items/${id}`, { method: 'DELETE' });
         await fetchCartData();
     }
 
+    // Switch between Home and Cart tabs / 在首页和购物车标签之间切换
     function switchTab(tab, element) {
         if(window.innerWidth >= 768) return; 
         document.getElementById('page-home').style.display = tab === 'home' ? 'block' : 'none';
@@ -398,11 +425,13 @@
         element.classList.add('active');
     }
 
+    // Logout function / 退出登录
     function logout() {
         localStorage.clear();
         window.location.href = 'index.html';
     }
 
+    // Start execution / 开始执行
     init();
 </script>
 </body>
