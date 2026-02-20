@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的智能购物清单</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 20px; display: flex; justify-content: center; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 450px; }
+        h2 { color: #333; text-align: center; }
+        .input-group { margin-bottom: 15px; }
+        input { width: 94%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; }
+        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #0056b3; }
+        #list-container { margin-top: 20px; border-top: 2px solid #eee; padding-top: 20px; display: none; }
+        .item { background: #fff; border: 1px solid #eee; padding: 10px; margin-bottom: 8px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .item-info { display: flex; flex-direction: column; }
+        .item-name { font-weight: bold; color: #2c3e50; }
+        .item-loc { font-size: 12px; color: #7f8c8d; }
+        .badge { background: #e8f4fd; color: #007bff; padding: 4px 8px; border-radius: 4px; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div id="auth-section">
+        <h2>🛍️ 登录清单</h2>
+        <div class="input-group"><input type="email" id="email" placeholder="邮箱" value="test@test.com"></div>
+        <div class="input-group"><input type="password" id="password" placeholder="密码" value="123"></div>
+        <button onclick="login()">确认登录</button>
+    </div>
+
+    <div id="list-container">
+        <h2>🛒 我的购物清单</h2>
+        <div style="margin-bottom: 20px;">
+    <input type="text" id="search-input" placeholder="输入商品名称（如：Milk, Bread）" oninput="searchProducts()">
+    <div id="search-results" style="background: #fff; border: 1px solid #ddd; display: none; position: absolute; width: 350px; z-index: 100;">
+        </div>
+</div>
+        <div id="items-list">
+            </div>
+        <button onclick="logout()" style="background:#6c757d; margin-top:10px;">退出登录</button>
+    </div>
+</div>
+
+<script>
+    // 1. 登录功能
+    async function login() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+        if (data.token) {
+            localStorage.setItem('token', data.token); // 关键：把令牌存入浏览器缓存
+            showList(); // 登录成功后直接加载清单
+        } else {
+            alert('登录失败，请检查账号密码');
+        }
+    }
+
+    // 2. 获取并渲染清单
+    async function showList() {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/list', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const data = await response.json();
+        
+        const listDiv = document.getElementById('items-list');
+        const container = document.getElementById('list-container');
+        const authSection = document.getElementById('auth-section');
+
+        listDiv.innerHTML = ''; // 清空旧列表
+        
+        if (data.items && data.items.length > 0) {
+            data.items.forEach(item => {
+                const product = item.productId;
+                listDiv.innerHTML += `
+                    <div class="item">
+                        <div class="item-info">
+                            <span class="item-name">${product.name}</span>
+                            <span class="item-loc">📍 位置: ${product.location}</span>
+                        </div>
+                        <span class="badge">x ${item.quantity}</span>
+                    </div>
+                `;
+            });
+        } else {
+            listDiv.innerHTML = '<p style="text-align:center; color:#999;">清单是空的，快去添加商品吧！</p>';
+        }
+
+        authSection.style.display = 'none'; // 隐藏登录框
+        container.style.display = 'block';   // 显示清单
+    }
+
+    function logout() {
+        localStorage.removeItem('token');
+        location.reload();
+    }
+
+    // 页面加载时检查是否已登录
+    if (localStorage.getItem('token')) {
+        showList();
+    }
+
+    // 3. 搜索商品
+    async function searchProducts() {
+        const query = document.getElementById('search-input').value;
+        const resDiv = document.getElementById('search-results');
+        
+        if (query.length < 2) { resDiv.style.display = 'none'; return; }
+
+        const response = await fetch(`/api/products?search=${query}`);
+        const products = await response.json();
+
+        resDiv.innerHTML = '';
+        resDiv.style.display = 'block';
+
+        products.forEach(p => {
+            resDiv.innerHTML += `
+                <div style="padding: 10px; border-bottom: 1px solid #eee; cursor: pointer;" onclick="addToItems('${p._id}')">
+                    <strong>${p.name}</strong> - €${p.price}
+                </div>
+            `;
+        });
+    }
+
+    // 4. 添加到清单
+    async function addToItems(productId) {
+        const token = localStorage.getItem('token');
+        await fetch('/api/list/add', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ productId, quantity: 1 })
+        });
+        
+        document.getElementById('search-results').style.display = 'none';
+        document.getElementById('search-input').value = '';
+        showList(); // 刷新列表
+    }
+</script>
+
+</body>
+</html>
