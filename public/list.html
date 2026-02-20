@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping App</title>
+    <style>
+        :root { --primary: #ff5000; --bg: #f4f4f4; --text: #333; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; padding-bottom: 60px; color: var(--text); }
+        .header { background: white; padding: 10px 15px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; gap: 10px; }
+        .search-bar { flex: 1; background: var(--bg); border: none; padding: 10px; border-radius: 20px; outline: none; box-sizing: border-box; }
+        .lang-select { border: none; background: #eee; border-radius: 20px; padding: 0 10px; outline: none; }
+        .controls-bar { display: flex; gap: 10px; margin: 10px; flex-wrap: wrap; }
+        .controls-bar select { flex: 1; min-width: 30%; padding: 10px; border: none; border-radius: 10px; outline: none; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); font-size: 13px; }
+        .banner { background: linear-gradient(90deg, #ff9000, #ff5000); color: white; margin: 10px; padding: 15px; border-radius: 10px; font-weight: bold; }
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; padding: 10px; }
+        .card { background: white; border-radius: 10px; padding: 15px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .card img { width: 80px; height: 80px; object-fit: cover; margin-bottom: 5px; border-radius: 5px; }
+        .category-tag { background: #e9ecef; color: #495057; font-size: 10px; padding: 3px 8px; border-radius: 10px; display: inline-block; margin-bottom: 5px; }
+        .card-title { font-size: 14px; font-weight: bold; margin: 5px 0; height: 35px; overflow: hidden; }
+        .card-unit { font-size: 12px; color: #888; margin-bottom: 5px; }
+        .store-info { font-size: 12px; padding: 5px; background: #f8f9fa; border-radius: 5px; margin-bottom: 10px; border: 1px solid #eee; text-align: left; }
+        .card-bottom { display: flex; justify-content: space-between; align-items: center; }
+        .price { color: var(--primary); font-weight: bold; font-size: 16px; }
+        .add-btn { background: var(--primary); color: white; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-weight: bold; }
+        .add-btn:disabled { background: #ccc; cursor: not-allowed; }
+        
+        .cart-section { display: none; padding: 15px; background: white; min-height: 100vh; }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #eee; }
+        .cart-info { display: flex; align-items: center; gap: 10px; }
+        .cart-info img { width: 50px; height: 50px; border-radius: 5px; object-fit: cover; }
+        .cart-actions { display: flex; align-items: center; gap: 10px; }
+        .qty-controls { display: flex; align-items: center; gap: 5px; }
+        .qty-btn { width: 25px; height: 25px; border-radius: 50%; border: 1px solid #ccc; background: white; cursor: pointer; font-weight: bold; }
+        .del-btn { color: red; background: none; border: none; cursor: pointer; font-size: 14px; }
+        
+        .cart-total { position: fixed; bottom: 60px; left: 0; right: 0; background: white; padding: 15px; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #eee; z-index: 100; }
+        .nav-item { text-align: center; color: #888; cursor: pointer; font-size: 14px; flex: 1; }
+        .nav-item.active { color: var(--primary); font-weight: bold; }
+        .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 10px 20px; border-radius: 20px; font-size: 14px; opacity: 0; transition: 0.3s; pointer-events: none; z-index: 1000; }
+        .toast.show { opacity: 1; }
+
+        @media (min-width: 768px) {
+            body { padding-bottom: 0; }
+            .bottom-nav { display: none; }
+            .container { display: flex; max-width: 1000px; margin: 0 auto; }
+            .main-content { flex: 2; }
+            .cart-section { display: block !important; flex: 1; margin-left: 20px; border-left: 1px solid #eee; position: sticky; top: 0; height: 100vh; }
+            .cart-total { position: static; margin-top: 20px; border: none; }
+            .toast { bottom: 30px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <input type="text" class="search-bar" id="search" placeholder="Search..." onkeyup="applyFilters()">
+    <select class="lang-select" id="lang-select" onchange="changeLang()">
+        <option value="zh">ZH</option>
+        <option value="en">EN</option>
+        <option value="fi">FI</option>
+    </select>
+</div>
+
+<div class="controls-bar" id="page-controls">
+    <select id="category-filter" onchange="applyFilters()"></select>
+    <select id="sort-by" onchange="applyFilters()">
+        <option value="name" id="opt-name">名称</option>
+        <option value="price" id="opt-price">价格</option>
+        <option value="stock" id="opt-stock">库存</option>
+    </select>
+    <select id="sort-order" onchange="applyFilters()">
+        <option value="asc" id="opt-asc">升序</option>
+        <option value="desc" id="opt-desc">降序</option>
+    </select>
+</div>
+
+<div class="container">
+    <div class="main-content" id="page-home">
+        <div id="promotions"></div>
+        <div class="product-grid" id="products"></div>
+    </div>
+
+    <div class="cart-section" id="page-cart">
+        <h3 id="t-cart">🛒 购物车</h3>
+        <div class="controls-bar" id="cart-controls">
+            <select id="cart-category-filter" onchange="applyCartFilters()"></select>
+            <select id="cart-sort-by" onchange="applyCartFilters()">
+                <option value="name" id="c-opt-name">名称</option>
+                <option value="price" id="c-opt-price">价格</option>
+                <option value="qty" id="c-opt-qty">数量</option>
+            </select>
+            <select id="cart-sort-order" onchange="applyCartFilters()">
+                <option value="asc" id="c-opt-asc">升序</option>
+                <option value="desc" id="c-opt-desc">降序</option>
+            </select>
+        </div>
+
+        <div id="cart"></div>
+        <div class="cart-total">
+            <span><span id="t-total">总计</span>: <b style="color:var(--primary); font-size: 18px;">￥<span id="total-price">0.00</span></b></span>
+            <button id="t-checkout" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:20px;">结算</button>
+        </div>
+    </div>
+</div>
+
+<div class="bottom-nav">
+    <div class="nav-item active" id="nav-home" onclick="switchTab('home', this)">首页</div>
+    <div class="nav-item" id="nav-cart" onclick="switchTab('cart', this)">购物车</div>
+    <div class="nav-item" id="nav-out" onclick="logout()">退出</div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+    const username = localStorage.getItem('username');
+    if (!username) window.location.href = 'index.html';
+
+    let allProducts = [];
+    let cartItems = [];
+    let promoData = [];
+    let toastTimeout;
+    
+    let currentLang = localStorage.getItem('lang') || 'zh';
+    document.getElementById('lang-select').value = currentLang;
+
+    const dict = {
+        zh: {
+            search: '搜索商品...', home: '首页', cart: '购物车', out: '退出', total: '总计', checkout: '结算',
+            name: '名称', price: '价格', stock: '库存', qty: '数量', asc: '升序', desc: '降序',
+            all: '所有分类', groceries: '食品杂货', beauty: '美妆', 'skin-care': '护肤', 'kitchen-accessories': '厨房用品',
+            soldout: '已售罄', left: '余量', aisle: '📍 货架', added: '已加入购物车', remove: '移除',
+            promoTitle: '实体店专享', promoDetail: '凭App前往 B-02 货架领取试吃品'
+        },
+        en: {
+            search: 'Search products...', home: 'Home', cart: 'Cart', out: 'Logout', total: 'Total', checkout: 'Checkout',
+            name: 'Name', price: 'Price', stock: 'Stock', qty: 'Quantity', asc: 'Ascending', desc: 'Descending',
+            all: 'All Categories', groceries: 'Groceries', beauty: 'Beauty', 'skin-care': 'Skin Care', 'kitchen-accessories': 'Kitchen',
+            soldout: 'Sold Out', left: 'Left', aisle: '📍 Aisle', added: 'Added to cart', remove: 'Remove',
+            promoTitle: 'In-Store Exclusive', promoDetail: 'Claim a free sample at aisle B-02 with the App'
+        },
+        fi: {
+            search: 'Hae tuotteita...', home: 'Koti', cart: 'Ostoskori', out: 'Kirjaudu ulos', total: 'Yhteensä', checkout: 'Kassalle',
+            name: 'Nimi', price: 'Hinta', stock: 'Varasto', qty: 'Määrä', asc: 'Nouseva', desc: 'Laskeva',
+            all: 'Kaikki luokat', groceries: 'Päivittäistavarat', beauty: 'Kauneus', 'skin-care': 'Ihonhoito', 'kitchen-accessories': 'Keittiö',
+            soldout: 'Loppuunmyyty', left: 'Jäljellä', aisle: '📍 Hylly', added: 'Lisätty koriin', remove: 'Poista',
+            promoTitle: 'Myymäläetu', promoDetail: 'Hae ilmainen näyte hyllyltä B-02 sovelluksella'
+        }
+    };
+
+    // 商品名词典替换器
+    const wordDict = {
+        zh: {
+            'Essence': '精华', 'Mascara': '睫毛膏', 'Lash': '睫毛', 'Princess': '公主',
+            'Eyeshadow': '眼影', 'Palette': '眼影盘', 'Mirror': '镜子', 'Powder': '散粉', 'Canister': '罐',
+            'Red': '红色', 'Lipstick': '口红', 'Nail Polish': '指甲油', 'Calvin Klein': 'CK',
+            'Perfume': '香水', 'Fragrance': '香水', 'Eau De': '香水', 'Apple': '苹果',
+            'Meat': '肉', 'Chicken': '鸡肉', 'Beef': '牛肉', 'Fish': '鱼', 'Pork': '猪肉',
+            'Milk': '牛奶', 'Cheese': '奶酪', 'Butter': '黄油', 'Bread': '面包', 'Rice': '大米',
+            'Juice': '果汁', 'Water': '水', 'Lemon': '柠檬', 'Strawberry': '草莓', 'Tomato': '西红柿',
+            'Cucumber': '黄瓜', 'Eggs': '鸡蛋', 'Dog Food': '狗粮', 'Cat Food': '猫粮',
+            'Green': '绿色', 'Bell Pepper': '甜椒', 'Kiwi': '猕猴桃'
+        },
+        fi: {
+            'Essence': 'Eteerinen', 'Mascara': 'Ripsiväri', 'Lash': 'Ripsi', 'Princess': 'Prinsessa',
+            'Eyeshadow': 'Luomiväri', 'Palette': 'Paletti', 'Mirror': 'Peili', 'Powder': 'Puuteri', 'Canister': 'Purkki',
+            'Red': 'Punainen', 'Lipstick': 'Huulipuna', 'Nail Polish': 'Kynsilakka', 'Calvin Klein': 'CK',
+            'Perfume': 'Hajuvesi', 'Fragrance': 'Tuoksu', 'Eau De': 'Hajuvesi', 'Apple': 'Omena',
+            'Meat': 'Liha', 'Chicken': 'Kana', 'Beef': 'Naudanliha', 'Fish': 'Kala', 'Pork': 'Sianliha',
+            'Milk': 'Maito', 'Cheese': 'Juusto', 'Butter': 'Voi', 'Bread': 'Leipä', 'Rice': 'Riisi',
+            'Juice': 'Mehu', 'Water': 'Vesi', 'Lemon': 'Sitruuna', 'Strawberry': 'Mansikka', 'Tomato': 'Tomaatti',
+            'Cucumber': 'Kurkku', 'Eggs': 'Kananmunat', 'Dog Food': 'Koiranruoka', 'Cat Food': 'Kissanruoka',
+            'Green': 'Vihreä', 'Bell Pepper': 'Paprika', 'Kiwi': 'Kiivi'
+        }
+    };
+
+    function translateName(name) {
+        if (currentLang === 'en') return name;
+        let translated = name;
+        const langDict = wordDict[currentLang] || {};
+        for (const [eng, trans] of Object.entries(langDict)) {
+            const regex = new RegExp('\\b' + eng + '\\b', 'gi');
+            translated = translated.replace(regex, trans);
+        }
+        return translated;
+    }
+
+    function changeLang() {
+        currentLang = document.getElementById('lang-select').value;
+        localStorage.setItem('lang', currentLang);
+        updateUI();
+        applyFilters(); 
+        applyCartFilters();
+    }
+
+    function updateUI() {
+        const d = dict[currentLang];
+        document.getElementById('search').placeholder = d.search;
+        document.getElementById('nav-home').innerText = d.home;
+        document.getElementById('nav-cart').innerText = d.cart;
+        document.getElementById('nav-out').innerText = d.out;
+        document.getElementById('t-cart').innerText = `🛒 ${d.cart}`;
+        document.getElementById('t-total').innerText = d.total;
+        document.getElementById('t-checkout').innerText = d.checkout;
+        
+        document.getElementById('opt-name').innerText = d.name;
+        document.getElementById('opt-price').innerText = d.price;
+        document.getElementById('opt-stock').innerText = d.stock;
+        document.getElementById('opt-asc').innerText = d.asc;
+        document.getElementById('opt-desc').innerText = d.desc;
+
+        document.getElementById('c-opt-name').innerText = d.name;
+        document.getElementById('c-opt-price').innerText = d.price;
+        document.getElementById('c-opt-qty').innerText = d.qty;
+        document.getElementById('c-opt-asc').innerText = d.asc;
+        document.getElementById('c-opt-desc').innerText = d.desc;
+
+        populateCategories('category-filter', allProducts);
+        populateCategories('cart-category-filter', cartItems);
+        renderPromotions();
+    }
+
+    async function init() {
+        const promoRes = await fetch('/api/promotions');
+        promoData = await promoRes.json();
+
+        const prodRes = await fetch('/api/products');
+        allProducts = await prodRes.json();
+        
+        await fetchCartData();
+        updateUI();
+        applyFilters();
+    }
+
+    function renderPromotions() {
+        document.getElementById('promotions').innerHTML = promoData.map(p => 
+            `<div class="banner">${dict[currentLang][p.titleKey]} - ${dict[currentLang][p.detailKey]}</div>`
+        ).join('');
+    }
+
+    function populateCategories(elementId, dataArray) {
+        const catSelect = document.getElementById(elementId);
+        const currentVal = catSelect.value;
+        catSelect.innerHTML = `<option value="all">${dict[currentLang].all}</option>`;
+        
+        const categories = [...new Set(dataArray.map(p => p.category).filter(Boolean))];
+        categories.forEach(c => {
+            const option = document.createElement('option');
+            option.value = c;
+            option.innerText = dict[currentLang][c] || c;
+            catSelect.appendChild(option);
+        });
+        
+        if (currentVal && currentVal !== 'all') catSelect.value = currentVal;
+    }
+
+    function applyFilters() {
+        const query = document.getElementById('search').value.toLowerCase();
+        const category = document.getElementById('category-filter').value;
+        const sortBy = document.getElementById('sort-by').value;
+        const sortOrder = document.getElementById('sort-order').value;
+
+        let filtered = allProducts.filter(p => p.name.toLowerCase().includes(query) || translateName(p.name).toLowerCase().includes(query));
+        if (category !== 'all') filtered = filtered.filter(p => p.category === category);
+
+        let mod = sortOrder === 'asc' ? 1 : -1;
+        filtered.sort((a, b) => {
+            if (sortBy === 'name') return translateName(a.name).localeCompare(translateName(b.name)) * mod;
+            if (sortBy === 'price') return (a.price - b.price) * mod;
+            if (sortBy === 'stock') return (a.stock - b.stock) * mod;
+            return 0;
+        });
+
+        renderProducts(filtered);
+    }
+
+    function renderProducts(products) {
+        const d = dict[currentLang];
+        document.getElementById('products').innerHTML = products.map(p => {
+            const stockColor = p.stock < 10 ? 'red' : '#2ea44f';
+            const stockText = p.stock === 0 ? d.soldout : `${d.left}: ${p.stock}`;
+            const btnState = p.stock === 0 ? 'disabled' : '';
+            const catName = d[p.category] || p.category;
+            const displayName = translateName(p.name);
+            const safeName = p.name.replace(/'/g, "\\'");
+
+            return `
+            <div class="card">
+                <img src="${p.image}" alt="${p.name}">
+                <br>
+                <div class="category-tag">${catName}</div>
+                <div class="card-title">${displayName}</div>
+                <div class="card-unit">${p.unit}</div>
+                <div class="store-info">
+                    ${d.aisle}: <b>${p.aisle}</b><br>
+                    <span style="color:${stockColor}; font-weight:bold;">${stockText}</span>
+                </div>
+                <div class="card-bottom">
+                    <div class="price">￥${p.price}</div>
+                    <button class="add-btn" onclick="addToCart('${safeName}', ${p.price}, '${p.image}', '${p.category}')" ${btnState}>+</button>
+                </div>
+            </div>
+            `;
+        }).join('');
+    }
+
+    async function fetchCartData() {
+        const res = await fetch(`/items/${username}`);
+        cartItems = await res.json();
+        populateCategories('cart-category-filter', cartItems);
+        applyCartFilters();
+    }
+
+    function applyCartFilters() {
+        const category = document.getElementById('cart-category-filter').value;
+        const sortBy = document.getElementById('cart-sort-by').value;
+        const sortOrder = document.getElementById('cart-sort-order').value;
+
+        let filtered = [...cartItems];
+        if (category !== 'all') filtered = filtered.filter(p => p.category === category);
+
+        let mod = sortOrder === 'asc' ? 1 : -1;
+        filtered.sort((a, b) => {
+            if (sortBy === 'name') return translateName(a.name).localeCompare(translateName(b.name)) * mod;
+            if (sortBy === 'price') return (a.price - b.price) * mod;
+            if (sortBy === 'qty') return (a.quantity - b.quantity) * mod;
+            return 0;
+        });
+
+        renderCart(filtered);
+    }
+
+    function renderCart(itemsToRender) {
+        const d = dict[currentLang];
+        
+        document.getElementById('cart').innerHTML = itemsToRender.map(item => {
+            const displayName = translateName(item.name);
+            return `
+            <div class="cart-item">
+                <div class="cart-info">
+                    <img src="${item.image}" alt="img">
+                    <div>
+                        <div style="font-weight:bold; font-size:14px;">${displayName}</div>
+                        <div style="color:var(--primary); margin-top:5px;">￥${item.price}</div>
+                    </div>
+                </div>
+                <div class="cart-actions">
+                    <div class="qty-controls">
+                        <button class="qty-btn" onclick="updateQty('${item._id}', 'decrease')">-</button>
+                        <span>${item.quantity}</span>
+                        <button class="qty-btn" onclick="updateQty('${item._id}', 'increase')">+</button>
+                    </div>
+                    <button class="del-btn" onclick="del('${item._id}')">${d.remove}</button>
+                </div>
+            </div>
+        `}).join('');
+        
+        let absoluteTotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        document.getElementById('total-price').innerText = absoluteTotal.toFixed(2);
+    }
+
+    function showToast(key) {
+        const toast = document.getElementById('toast');
+        toast.innerText = dict[currentLang][key] || key;
+        toast.classList.add('show');
+        clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => { toast.classList.remove('show'); }, 2000);
+    }
+
+    async function addToCart(name, price, image, category) {
+        await fetch('/items', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, name, price, image, category })
+        });
+        await fetchCartData();
+        showToast('added');
+    }
+
+    async function updateQty(id, action) {
+        await fetch(`/items/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }) });
+        await fetchCartData();
+    }
+
+    async function del(id) {
+        await fetch(`/items/${id}`, { method: 'DELETE' });
+        await fetchCartData();
+    }
+
+    function switchTab(tab, element) {
+        if(window.innerWidth >= 768) return; 
+        document.getElementById('page-home').style.display = tab === 'home' ? 'block' : 'none';
+        document.getElementById('page-cart').style.display = tab === 'cart' ? 'block' : 'none';
+        document.getElementById('page-controls').style.display = tab === 'home' ? 'flex' : 'none';
+        
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        element.classList.add('active');
+    }
+
+    function logout() {
+        localStorage.clear();
+        window.location.href = 'index.html';
+    }
+
+    init();
+</script>
+</body>
+</html>

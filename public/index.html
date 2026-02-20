@@ -1,98 +1,98 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的智能购物清单</title>
+    <title>Shopping App Login</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 20px; display: flex; justify-content: center; }
-        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 450px; }
-        h2 { color: #333; text-align: center; }
-        .input-group { margin-bottom: 15px; }
-        input { width: 94%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; }
-        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; }
-        button:hover { background: #0056b3; }
-        #list-container { margin-top: 20px; border-top: 2px solid #eee; padding-top: 20px; display: none; }
-        .item { background: #fff; border: 1px solid #eee; padding: 10px; margin-bottom: 8px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
-        .item-info { display: flex; flex-direction: column; }
-        .item-name { font-weight: bold; color: #2c3e50; }
-        .item-loc { font-size: 12px; color: #7f8c8d; }
-        .badge { background: #e8f4fd; color: #007bff; padding: 4px 8px; border-radius: 4px; font-size: 14px; }
+        body { font-family: sans-serif; background-color: #f4f4f4; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .lang-select { position: absolute; top: 20px; right: 20px; padding: 5px; border-radius: 5px; }
+        .card { background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 300px; text-align: center; }
+        h2 { margin-bottom: 20px; color: #333; }
+        input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 10px; font-weight: bold; }
+        .btn-login { background-color: #ff5000; color: white; }
+        .btn-reg { background-color: #eee; color: #333; }
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); color: white; padding: 10px 20px; border-radius: 20px; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000; }
+        .toast.show { opacity: 1; top: 40px; }
     </style>
 </head>
 <body>
+    <select class="lang-select" id="lang-select" onchange="changeLang()">
+        <option value="zh">中文</option>
+        <option value="en">English</option>
+        <option value="fi">Suomi</option>
+    </select>
 
-<div class="card">
-    <div id="auth-section">
-        <h2>🛍️ 登录清单</h2>
-        <div class="input-group"><input type="email" id="email" placeholder="邮箱" value="test@test.com"></div>
-        <div class="input-group"><input type="password" id="password" placeholder="密码" value="123"></div>
-        <button onclick="login()">确认登录</button>
+    <div class="card">
+        <h2 id="t-title">登录你的清单</h2>
+        <input type="text" id="username" placeholder="输入用户名">
+        <input type="password" id="password" placeholder="输入密码">
+        <button class="btn-login" id="t-login" onclick="auth('login')">登录</button>
+        <button class="btn-reg" id="t-reg" onclick="auth('register')">注册</button>
     </div>
+    <div id="toast" class="toast"></div>
 
-    <div id="list-container">
-        <h2>🛒 我的购物清单</h2>
-        <div style="margin-bottom: 20px;">
-    <input type="text" id="search-input" placeholder="输入商品名称（如：Milk, Bread）" oninput="searchProducts()">
-    <div id="search-results" style="background: #fff; border: 1px solid #ddd; display: none; position: absolute; width: 350px; z-index: 100;">
-        </div>
-</div>
-        <div id="items-list">
-            </div>
-        <button onclick="logout()" style="background:#6c757d; margin-top:10px;">退出登录</button>
-    </div>
-</div>
+    <script>
+        const dict = {
+            zh: { title: '登录你的清单', user: '输入用户名', pass: '输入密码', login: '登录', reg: '注册', err1: '请填写完整', err2: '账号或密码错误', exists: '用户名已存在', regok: '注册成功' },
+            en: { title: 'Login to App', user: 'Username', pass: 'Password', login: 'Login', reg: 'Register', err1: 'Fill all fields', err2: 'Invalid credentials', exists: 'User exists', regok: 'Registered' },
+            fi: { title: 'Kirjaudu sisään', user: 'Käyttäjätunnus', pass: 'Salasana', login: 'Kirjaudu', reg: 'Rekisteröidy', err1: 'Täytä kentät', err2: 'Virheelliset tiedot', exists: 'Käyttäjä on jo', regok: 'Rekisteröity' }
+        };
 
-<script>
-    const API_URL = ''; // 在 Render 上运行时，留空即可
+        let currentLang = localStorage.getItem('lang') || 'zh';
+        document.getElementById('lang-select').value = currentLang;
+        updateUI();
 
-    async function register() {
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-
-        if (!username || !password) {
-            alert('请填入用户名和密码');
-            return;
+        function changeLang() {
+            currentLang = document.getElementById('lang-select').value;
+            localStorage.setItem('lang', currentLang);
+            updateUI();
         }
 
-        try {
-            const response = await fetch(`${API_URL}/register`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            });
-
-            const result = await response.text();
-            alert(result); // 这里会弹出“注册成功”或“用户名已存在”
-        } catch (error) {
-            console.error('注册请求失败:', error);
-            alert('网络错误，请稍后再试');
+        function updateUI() {
+            document.getElementById('t-title').innerText = dict[currentLang].title;
+            document.getElementById('username').placeholder = dict[currentLang].user;
+            document.getElementById('password').placeholder = dict[currentLang].pass;
+            document.getElementById('t-login').innerText = dict[currentLang].login;
+            document.getElementById('t-reg').innerText = dict[currentLang].reg;
         }
-    }
 
-    async function login() {
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
+        let toastTimeout;
+        function showToast(key) {
+            const toast = document.getElementById('toast');
+            toast.innerText = dict[currentLang][key] || key;
+            toast.classList.add('show');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => { toast.classList.remove('show'); }, 2000);
+        }
 
-        try {
-            const response = await fetch(`${API_URL}/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            });
+        async function auth(action) {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            if (!username || !password) return showToast('err1');
 
-            const data = await response.json();
-            if (data.success) {
-                localStorage.setItem('username', username);
-                window.location.href = 'list.html'; // 登录成功后跳转到清单页
-            } else {
-                alert(data.message);
+            try {
+                const res = await fetch(`/${action}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (action === 'login') {
+                    const data = await res.json();
+                    if (data.success) {
+                        localStorage.setItem('username', username);
+                        window.location.href = 'list.html';
+                    } else showToast('err2');
+                } else {
+                    const text = await res.text();
+                    showToast(text === 'exists' ? 'exists' : (text === 'success' ? 'regok' : text));
+                }
+            } catch (err) {
+                showToast('Network Error');
             }
-        } catch (error) {
-            alert('登录出错');
         }
-    }
-</script>
-
+    </script>
 </body>
 </html>

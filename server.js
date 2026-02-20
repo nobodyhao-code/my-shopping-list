@@ -4,81 +4,121 @@ const path = require('path');
 const app = express();
 
 app.use(express.json());
-app.use(express.static('public')); // 确保你的 HTML 文件在 public 文件夹里
+app.use(express.static(path.join(__dirname, 'public')));
 
-// 1. 连接数据库 (优先使用 Render 环境变量)
-const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/grocery_app';
-mongoose.connect(mongoURI)
-    .then(() => console.log('数据库连接成功！'))
-    .catch(err => console.error('数据库连接失败:', err));
+const mongoURI = 'mongodb+srv://nobodycnmd_db_user:O70rNx8vJ7GNzIjs@nobody.sw53gvt.mongodb.net/grocery_app?retryWrites=true&w=majority';
+mongoose.connect(mongoURI).then(() => console.log('Database connected')).catch(err => console.error(err));
 
-// 2. 定义数据模型
-const UserSchema = new mongoose.Schema({
+const User = mongoose.model('User', new mongoose.Schema({
     username: { type: String, unique: true, required: true },
     password: { type: String, required: true }
-});
-const User = mongoose.model('User', UserSchema);
+}));
 
-const ItemSchema = new mongoose.Schema({
+// 修改了 Item 模型，增加了 category 字段
+const Item = mongoose.model('Item', new mongoose.Schema({
     username: String,
     name: String,
-    completed: { type: Boolean, default: false }
-});
-const Item = mongoose.model('Item', ItemSchema);
+    price: Number,
+    image: String,
+    category: String,
+    quantity: { type: Number, default: 1 }
+}));
 
-// 3. 注册接口
 app.post('/register', async (req, res) => {
     try {
         const { username, password } = req.body;
-        if (!username || !password) return res.status(400).send('用户名和密码不能为空');
-        
-        const existingUser = await User.findOne({ username });
-        if (existingUser) return res.status(400).send('用户名已存在');
-
-        const newUser = new User({ username, password });
-        await newUser.save();
-        res.send('注册成功！现在可以去登录了');
+        if (await User.findOne({ username })) return res.status(400).send('exists');
+        await new User({ username, password }).save();
+        res.send('success');
     } catch (error) {
-        res.status(500).send('注册出错: ' + error.message);
+        res.status(500).send('error');
     }
 });
 
-// 4. 登录接口
 app.post('/login', async (req, res) => {
+    const { username, password } = req.body;
+    if (await User.findOne({ username, password })) res.json({ success: true });
+    else res.status(401).json({ success: false });
+});
+
+app.get('/api/products', async (req, res) => {
     try {
-        const { username, password } = req.body;
-        const user = await User.findOne({ username, password });
-        if (user) {
-            res.json({ success: true, message: '登录成功' });
-        } else {
-            res.status(401).json({ success: false, message: '用户名或密码错误' });
-        }
+        const response = await fetch('https://dummyjson.com/products?limit=150');
+        const data = await response.json();
+
+        const allowedCategories = ['groceries', 'beauty', 'skin-care', 'kitchen-accessories'];
+
+        const formattedProducts = data.products
+            .filter(item => allowedCategories.includes(item.category))
+            .map(item => {
+                const stock = Math.floor(Math.random() * 40); 
+                const aisleLetter = String.fromCharCode(65 + Math.floor(Math.random() * 6)); 
+                const aisleNumber = String(Math.floor(Math.random() * 10) + 1).padStart(2, '0');
+
+                return {
+                    id: item.id,
+                    name: item.title,
+                    price: item.price,
+                    unit: '500g', 
+                    category: item.category,
+                    image: item.thumbnail,
+                    stock: stock,
+                    aisle: `${aisleLetter}-${aisleNumber}`
+                };
+            });
+
+        res.json(formattedProducts);
     } catch (error) {
-        res.status(500).send('登录出错');
+        console.error('API Error:', error);
+        res.status(500).send('API failed');
     }
 });
 
-// 5. 获取购物清单
+// 促销接口只发送代码，具体语言在前端翻译
+app.get('/api/promotions', (req, res) => {
+    res.json([{ id: 101, titleKey: 'promoTitle', detailKey: 'promoDetail' }]);
+});
+
 app.get('/items/:username', async (req, res) => {
-    const items = await Item.find({ username: req.params.username });
-    res.json(items);
+    res.json(await Item.find({ username: req.params.username }));
 });
 
-// 6. 添加物品
 app.post('/items', async (req, res) => {
-    const newItem = new Item(req.body);
-    await newItem.save();
-    res.json(newItem);
+    const { username, name, price, image, category } = req.body;
+    let item = await Item.findOne({ username, name });
+    
+    if (item) {
+        item.quantity += 1;
+        await item.save();
+        res.json(item);
+    } else {
+        res.json(await new Item({ username, name, price, image, category, quantity: 1 }).save());
+    }
 });
 
-// 7. 删除物品
+app.put('/items/:id', async (req, res) => {
+    const { action } = req.body;
+    const item = await Item.findById(req.params.id);
+    
+    if (!item) return res.status(404).send('Not found');
+
+    if (action === 'increase') {
+        item.quantity += 1;
+        await item.save();
+    } else if (action === 'decrease') {
+        if (item.quantity > 1) {
+            item.quantity -= 1;
+            await item.save();
+        } else {
+            await Item.findByIdAndDelete(req.params.id); 
+        }
+    }
+    res.json({ success: true });
+});
+
 app.delete('/items/:id', async (req, res) => {
     await Item.findByIdAndDelete(req.params.id);
     res.json({ success: true });
 });
 
-// 启动服务器
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
-    console.log(`服务器运行在端口 ${PORT}`);
-});
+app.listen(10000, () => console.log('Server running on port 10000'));
