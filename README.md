@@ -1,4 +1,3 @@
-这是一份中英双语的 使用说明 (User Guide)，你可以直接发给你的组员。它包含了测试应用的方法和修改代码的步骤。
 Smart Shopping Platform - User Guide / 智能购物平台使用说明
 This guide helps you test the application and edit the code.
 这份说明帮助你测试应用和修改代码。
