@@ -6,14 +6,14 @@ This is a lightweight mobile web application designed for local supermarkets. It
 这是一个为本地超市设计的轻量级移动端网页应用。它提供真实的商品数据、购物车管理、多语言切换以及动态电子会员卡。
 
 ## 🌐 Live Demo / 在线演示
-    * **Consumer App / 消费者 App**: [https://shopping-app-g1ru.onrender.com](https://shopping-app-g1ru.onrender.com)
-    * **Cashier Simulator / 收银台模拟器**: [https://shopping-app-g1ru.onrender.com/scanner.html](https://shopping-app-g1ru.onrender.com/scanner.html)
+    **Consumer App / 消费者 App**: [https://shopping-app-g1ru.onrender.com]
+    **Cashier Simulator / 收银台模拟器**: [https://shopping-app-g1ru.onrender.com/scanner.html]
 
 ## ⚡ Tech Stack & API / 技术栈与 API
-    * **Frontend / 前端**: HTML5, CSS3, Vanilla JavaScript, JsBarcode
-    * **Backend / 后端**: Node.js, Express.js
-    * **Database / 数据库**: MongoDB Atlas
-    * **External API / 外部接口**: DummyJSON (`https://dummyjson.com/products`)
+    **Frontend / 前端**: HTML5, CSS3, Vanilla JavaScript, JsBarcode
+    **Backend / 后端**: Node.js, Express.js
+    **Database / 数据库**: MongoDB Atlas
+    **External API / 外部接口**: DummyJSON (`https://dummyjson.com/products`)
 
 ## 💻 Local Setup / 本地运行指引
     1. **Clone repository / 克隆代码库**: `git clone https://github.com/nobodyhao-code/my-shopping-list.git`
@@ -32,23 +32,15 @@ This is a lightweight mobile web application designed for local supermarkets. It
 To change the application, you need Node.js and Git installed on your computer.
 如果要修改应用，你的电脑需要安装 Node.js 和 Git。
 Step 1: Download the Code / 下载代码
-Open your terminal and clone the repository:
-打开终端并克隆仓库：
-git clone https://github.com/nobodyhao-code/my-shopping-list.git
-cd my-shopping-list
+Open your terminal and clone the repository / 打开终端并克隆仓库：
+
 
 Step 2: Install Dependencies / 安装依赖
-Run this command to install required packages:
-运行此命令安装所需的包：
-npm install
+
 
 Step 3: Run Locally / 本地运行
-Start the local server:
-启动本地服务器：
-node server.js
+Start the local server / 启动本地服务器：
 
-Open your browser and go to http://localhost:10000.
-打开浏览器并访问 http://localhost:10000。
 3. Project File Structure / 项目文件结构
 | File / 文件 | Purpose / 用途 |
 |---|---|
@@ -56,6 +48,9 @@ Open your browser and go to http://localhost:10000.
 | package.json | Lists project dependencies and startup scripts. / 列出项目依赖和启动脚本。 |
 | public/index.html | Login and registration interface. / 登录和注册界面。 |
 | public/list.html | Main shopping interface, cart logic, and translation dictionary. / 主购物界面、购物车逻辑和翻译词典。 |
+| public/scanner.html | Cashier simulator for verifying dynamic loyalty barcodes. / 用于验证动态会员码的收银台模拟器。 |
+| public/locales.json | Multi-language dictionary for UI text and product names. / 界面文本和商品名称的多语言词典。 |
+| coupons.json | Local storage for coupon data, allowing real-time edits. / 优惠券数据的本地存储，允许实时编辑。 |
 4. How to Publish Changes / 如何发布修改
 When you finish editing, commit and push your code to GitHub. Render updates the live website automatically.
 修改完成后，提交并推送代码到 GitHub。Render 会自动更新在线网站。
