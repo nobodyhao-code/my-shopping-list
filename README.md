@@ -1,9 +1,29 @@
 Smart Shopping Platform - User Guide / 智能购物平台使用说明
 This guide helps you test the application and edit the code.
 这份说明帮助你测试应用和修改代码。
+
+This is a lightweight mobile web application designed for local supermarkets. It provides real product data, shopping cart management, multi-language support, and a dynamic digital loyalty card.
+这是一个为本地超市设计的轻量级移动端网页应用。它提供真实的商品数据、购物车管理、多语言切换以及动态电子会员卡。
+
+## 🌐 Live Demo / 在线演示
+    * **Consumer App / 消费者 App**: [https://shopping-app-g1ru.onrender.com](https://shopping-app-g1ru.onrender.com)
+    * **Cashier Simulator / 收银台模拟器**: [https://shopping-app-g1ru.onrender.com/scanner.html](https://shopping-app-g1ru.onrender.com/scanner.html)
+
+## ⚡ Tech Stack & API / 技术栈与 API
+    * **Frontend / 前端**: HTML5, CSS3, Vanilla JavaScript, JsBarcode
+    * **Backend / 后端**: Node.js, Express.js
+    * **Database / 数据库**: MongoDB Atlas
+    * **External API / 外部接口**: DummyJSON (`https://dummyjson.com/products`)
+
+## 💻 Local Setup / 本地运行指引
+    1. **Clone repository / 克隆代码库**: `git clone https://github.com/nobodyhao-code/my-shopping-list.git`
+    2. **Enter directory / 进入目录**: `cd my-shopping-list`
+    3. **Install dependencies / 安装依赖**: `npm install`
+    4. **Start server / 启动服务器**: `node server.js`
+    5. **Open browser / 在浏览器中打开**: `http://localhost:10000`
+
 1. How to Test the App / 如何测试应用
-You can access the live application here:https://shopping-app-g1ru.onrender.com
-你可以点击这里访问在线应用：https://shopping-app-g1ru.onrender.com
+
  * Login / 登录: Create a new account using the "Register" button. Then log in with your credentials. / 使用“注册”按钮创建新账号。然后使用该账号登录。
  * Change Language / 切换语言: Select your preferred language (EN, ZH, FI) from the dropdown menu in the top right corner. / 在右上角的下拉菜单中选择你偏好的语言。
  * Find Products / 查找商品: Use the search bar to type keywords. Use the dropdown menus to filter by category or sort by price, name, and stock. / 使用搜索框输入关键字。使用下拉菜单按分类、价格、名称和库存进行筛选。
