@@ -1,0 +1,20 @@
+[
+    {
+        "id": "c01",
+        "name": { "zh": "新人立减",
+                "en": "Welcome Discount",
+                "fi": "Tervetuloalennus" },
+        "desc": { "zh": "全场通用立减 2 €",
+                "en": "Get €2 off any purchase",
+                "fi": "2 € alennus kaikista ostoksista" }
+    },
+    {
+        "id": "c02",
+        "name": { "zh": "周末特惠",
+                "en": "Weekend Special",
+                "fi": "Viikonlopputarjous" },
+        "desc": { "zh": "满 50 € 减 5 €",
+                "en": "Save €5 on orders over €50",
+                "fi": "Säästä 5 € yli 50 € tilauksista" }
+    }
+]
