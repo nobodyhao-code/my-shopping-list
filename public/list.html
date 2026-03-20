@@ -165,9 +165,12 @@
 <div id="toast" class="toast"></div>
 
 <script>
+    // 从本地缓存获取当前登录的用户名 / Get logged-in username from local storage
     const username = localStorage.getItem('username');
+    // 如果未登录，跳转回登录页 / Redirect to login page if not logged in
     if (!username) window.location.href = 'index.html';
 
+    // 全局数据存储变量 / Global data storage variables
     let allProducts = [];
     let cartItems = [];
     let promoData = [];
@@ -178,24 +181,27 @@
     let barcodeTimerInterval;
     let timeLeft = 60;
     
+    // 设置当前使用的语言，默认使用中文 / Set current language, default is Chinese
     let currentLang = localStorage.getItem('lang') || 'zh';
     document.getElementById('lang-select').value = currentLang;
 
     let dict = {};
     let wordDict = {};
 
+    // 根据当前语言翻译商品名称 / Translate product name based on current language
     function translateName(name) {
         if (currentLang === 'en') return name;
         
-        // 直接匹配完整的商品名称
+        // 直接匹配完整的商品名称 / Match full product name directly
         if (wordDict[currentLang] && wordDict[currentLang][name]) {
             return wordDict[currentLang][name];
         }
         
-        // 如果找不到完整翻译，原样返回英文
+        // 如果找不到完整翻译，原样返回英文 / Return original English if full translation is not found
         return name;
     }
 
+    // 切换系统语言并重新渲染界面 / Switch system language and re-render UI
     function changeLang() {
         currentLang = document.getElementById('lang-select').value;
         localStorage.setItem('lang', currentLang);
@@ -206,6 +212,7 @@
         updateBarcodeTimerText();
     }
 
+    // 更新界面上的静态文本 / Update static text on the UI
     function updateUI() {
         const d = dict[currentLang];
         document.getElementById('search').placeholder = d.search;
@@ -249,6 +256,7 @@
         renderPromotions();
     }
 
+    // 页面初始化：拉取所有数据并渲染 / Page initialization: fetch all data and render
     async function init() {
         const langRes = await fetch('/locales.json');
         const langData = await langRes.json();
@@ -272,12 +280,14 @@
         startBarcodeTimer();
     }
 
+    // 渲染顶部促销横幅 / Render top promotional banners
     function renderPromotions() {
         document.getElementById('promotions').innerHTML = promoData.map(p => 
             `<div class="banner">${dict[currentLang][p.titleKey]} - ${dict[currentLang][p.detailKey]}</div>`
         ).join('');
     }
 
+    // 渲染优惠券列表 / Render coupon list
     function renderCoupons() {
         const d = dict[currentLang];
         document.getElementById('coupons-list').innerHTML = availableCoupons.map(c => {
@@ -300,6 +310,7 @@
         }).join('');
     }
 
+    // 发送请求激活特定优惠券 / Send request to activate a specific coupon
     async function activateCoupon(couponId) {
         try {
             const res = await fetch(`/api/user/${username}/coupon`, {
@@ -315,6 +326,7 @@
         } catch (e) { console.error('Error activating coupon', e); }
     }
 
+    // 填充下拉过滤器的分类选项 / Populate category options for the dropdown filter
     function populateCategories(elementId, dataArray) {
         const catSelect = document.getElementById(elementId);
         const currentVal = catSelect.value;
@@ -331,6 +343,7 @@
         if (currentVal && currentVal !== 'all') catSelect.value = currentVal;
     }
 
+    // 执行搜索、分类过滤和商品排序 / Execute search, category filtering, and product sorting
     function applyFilters() {
         const query = document.getElementById('search').value.toLowerCase();
         const category = document.getElementById('category-filter').value;
@@ -351,6 +364,7 @@
         renderProducts(filtered);
     }
 
+    // 生成并显示商品卡片网格 / Generate and display product card grid
     function renderProducts(products) {
         const d = dict[currentLang];
         document.getElementById('products').innerHTML = products.map(p => {
@@ -381,6 +395,7 @@
         }).join('');
     }
 
+    // 从服务器获取用户的购物车数据 / Fetch user's cart data from the server
     async function fetchCartData() {
         const res = await fetch(`/items/${username}`);
         cartItems = await res.json();
@@ -388,6 +403,7 @@
         applyCartFilters();
     }
 
+    // 对购物车内的商品进行过滤和排序 / Filter and sort items within the shopping cart
     function applyCartFilters() {
         const category = document.getElementById('cart-category-filter').value;
         const sortBy = document.getElementById('cart-sort-by').value;
@@ -407,6 +423,7 @@
         renderCart(filtered);
     }
 
+    // 渲染购物车列表及计算总价 / Render cart list and calculate total price
     function renderCart(itemsToRender) {
         const d = dict[currentLang];
         document.getElementById('cart').innerHTML = itemsToRender.map(item => {
@@ -435,6 +452,7 @@
         document.getElementById('total-price').innerText = absoluteTotal.toFixed(2);
     }
 
+    // 加载用户个人资料与设置 / Load user profile and settings
     async function loadProfile() {
         document.getElementById('profile-username').innerText = username;
         try {
@@ -450,6 +468,7 @@
         } catch (e) { console.error('Profile Load Error:', e); showToast('profileError'); }
     }
 
+    // 开启个人资料编辑模式 / Enable profile edit mode
     function enableProfileEdit() {
         const inputs = document.querySelectorAll('.profile-input');
         inputs.forEach(input => input.removeAttribute('readonly'));
@@ -458,6 +477,7 @@
         document.getElementById('t-save-profile').style.display = 'block';
     }
 
+    // 关闭编辑模式并锁定输入框 / Disable edit mode and lock input fields
     function disableProfileEditMode() {
         const inputs = document.querySelectorAll('.profile-input');
         inputs.forEach(input => input.setAttribute('readonly', true));
@@ -466,6 +486,7 @@
         document.getElementById('t-save-profile').style.display = 'none';
     }
 
+    // 提交并保存修改后的用户资料 / Submit and save modified user profile
     async function saveProfile() {
         const email = document.getElementById('profile-email').value.trim();
         const phone = document.getElementById('profile-phone').value.trim();
@@ -482,6 +503,7 @@
         } catch (e) { console.error('Save Profile Error:', e); }
     }
 
+    // 在屏幕底部显示短暂的提示信息 / Show a brief toast message at the bottom of the screen
     function showToast(key) {
         const toast = document.getElementById('toast');
         toast.innerText = dict[currentLang][key] || key;
@@ -490,6 +512,7 @@
         toastTimeout = setTimeout(() => { toast.classList.remove('show'); }, 2000);
     }
 
+    // 生成 10 位动态会员码并渲染为条形码 / Generate 10-digit dynamic loyalty code and render as barcode
     function updateBarcode() {
         let numPrefix = 0;
         for (let i = 0; i < username.length; i++) {
@@ -512,10 +535,12 @@
         updateBarcodeTimerText();
     }
 
+    // 更新条形码下方的倒计时文本 / Update the countdown text below the barcode
     function updateBarcodeTimerText() {
         document.getElementById('t-barcode-timer').innerText = `${dict[currentLang].refresh}: ${timeLeft}s`;
     }
 
+    // 启动条形码 60 秒自动刷新定时器 / Start the 60-second auto-refresh timer for the barcode
     function startBarcodeTimer() {
         updateBarcode();
         clearInterval(barcodeInterval);
@@ -528,6 +553,7 @@
         }, 1000);
     }
 
+    // 将选中的商品加入购物车 / Add selected item to the shopping cart
     async function addToCart(name, price, image, category) {
         await fetch('/items', {
             method: 'POST',
@@ -538,16 +564,19 @@
         showToast('added');
     }
 
+    // 增加或减少购物车内特定商品的数量 / Increase or decrease quantity of a specific item in the cart
     async function updateQty(id, action) {
         await fetch(`/items/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }) });
         await fetchCartData();
     }
 
+    // 从购物车中彻底移除特定商品 / Completely remove a specific item from the shopping cart
     async function del(id) {
         await fetch(`/items/${id}`, { method: 'DELETE' });
         await fetchCartData();
     }
 
+    // 切换底部导航栏的不同视图页面 / Switch between different view pages of the bottom navigation
     function switchTab(tab, element) {
         const views = ['page-home', 'page-offers', 'page-cart', 'page-profile'];
         views.forEach(view => document.getElementById(view).style.display = 'none');
@@ -563,6 +592,7 @@
         }
     }
 
+    // 清除本地登录信息并退出账号 / Clear local login info and log out
     function logout() {
         localStorage.clear();
         window.location.href = 'index.html';
