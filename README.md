@@ -42,6 +42,7 @@ Step 3: Run Locally / 本地运行
 Start the local server / 启动本地服务器：
 
 3. Project File Structure / 项目文件结构
+
 | File / 文件 | Purpose / 用途 |
 |---|---|
 | server.js | Backend API, database connection, and custom product data. / 后端 API、数据库连接和自定义商品数据。 |
@@ -51,6 +52,7 @@ Start the local server / 启动本地服务器：
 | public/scanner.html | Cashier simulator for verifying dynamic loyalty barcodes. / 用于验证动态会员码的收银台模拟器。 |
 | public/locales.json | Multi-language dictionary for UI text and product names. / 界面文本和商品名称的多语言词典。 |
 | coupons.json | Local storage for coupon data, allowing real-time edits. / 优惠券数据的本地存储，允许实时编辑。 |
+
 4. How to Publish Changes / 如何发布修改
 When you finish editing, commit and push your code to GitHub. Render updates the live website automatically.
 修改完成后，提交并推送代码到 GitHub。Render 会自动更新在线网站。
