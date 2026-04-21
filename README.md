@@ -15,6 +15,13 @@ This is a lightweight mobile web application designed for local supermarkets. It
     **Database / 数据库**: MongoDB Atlas
     **External API / 外部接口**: DummyJSON (`https://dummyjson.com/products`)
 
+## 🚀 Features / 功能特点
+    * User Authentication / 用户认证: Register and login system for users. // 用户注册和登录系统
+    * Multi-language Support / 多语言支持: Supports English, Chinese, and Finnish. // 支持英语、中文和芬兰语
+    * Product Search & Filter / 商品搜索与筛选: Search products and filter by category, price, and stock. // 支持按分类、价格和库存筛选商品
+    * Shopping Cart Management / 购物车管理: Add, remove, and update product quantities in cart. // 添加、删除和更新购物车商品数量
+    * Loyalty Barcode System / 会员条码系统: Dynamic barcode for loyalty card verification. // 用于会员卡验证的动态条码系统
+
 ## 💻 Local Setup / 本地运行指引
     1. **Clone repository / 克隆代码库**: `git clone https://github.com/nobodyhao-code/my-shopping-list.git`
     2. **Enter directory / 进入目录**: `cd my-shopping-list`
