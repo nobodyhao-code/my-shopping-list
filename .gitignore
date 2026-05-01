@@ -1,0 +1,5 @@
+node_modules/
+.expo/
+.env
+backend/src/data/items.json
+backend/src/data/users.json

@@ -1,0 +1,35 @@
+[
+  {
+    "id": "store-kokkola-center",
+    "name": "Kokkola Keskusta Market",
+    "address": "Isokatu 12, 67100 Kokkola, Finland",
+    "openingHours": "Mon-Sat 08:00-21:00, Sun 11:00-18:00",
+    "phone": "+358 6 810 2201",
+    "email": "keskusta@kokkolaretail.demo",
+    "latitude": 63.8385,
+    "longitude": 23.1301,
+    "mapLink": "https://maps.google.com/?q=63.8385,23.1301"
+  },
+  {
+    "id": "store-kokkola-heinola",
+    "name": "Kokkola Heinola Market",
+    "address": "Heinolankaari 8, 67100 Kokkola, Finland",
+    "openingHours": "Mon-Fri 09:00-21:00, Sat 09:00-19:00, Sun 12:00-18:00",
+    "phone": "+358 6 810 2202",
+    "email": "heinola@kokkolaretail.demo",
+    "latitude": 63.8407,
+    "longitude": 23.1034,
+    "mapLink": "https://maps.google.com/?q=63.8407,23.1034"
+  },
+  {
+    "id": "store-kokkola-ykspihlaja",
+    "name": "Kokkola Ykspihlaja Market",
+    "address": "Satamakatu 4, 67900 Kokkola, Finland",
+    "openingHours": "Mon-Sat 08:30-20:00, Sun 12:00-18:00",
+    "phone": "+358 6 810 2203",
+    "email": "ykspihlaja@kokkolaretail.demo",
+    "latitude": 63.8331,
+    "longitude": 23.0818,
+    "mapLink": "https://maps.google.com/?q=63.8331,23.0818"
+  }
+]

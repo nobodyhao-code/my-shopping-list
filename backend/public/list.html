@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping App</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <style>
+        :root { --primary: #ff5000; --bg: #f4f4f4; --text: #333; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; padding-bottom: 70px; color: var(--text); }
+        .header { background: white; padding: 10px 15px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; gap: 10px; }
+        .search-bar { flex: 1; background: var(--bg); border: none; padding: 10px; border-radius: 20px; outline: none; box-sizing: border-box; }
+        .lang-select { border: none; background: #eee; border-radius: 20px; padding: 0 10px; outline: none; }
+        .controls-bar { display: flex; gap: 10px; margin: 10px; flex-wrap: wrap; display: none; }
+        .controls-bar select { flex: 1; min-width: 30%; padding: 10px; border: none; border-radius: 10px; outline: none; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); font-size: 13px; }
+        
+        .banner { background: linear-gradient(90deg, #ff9000, #ff5000); color: white; margin: 10px; padding: 15px; border-radius: 10px; font-weight: bold; }
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; padding: 10px; }
+        .card { background: white; border-radius: 10px; padding: 15px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 10px; }
+        .card img { width: 80px; height: 80px; object-fit: cover; margin-bottom: 5px; border-radius: 5px; }
+        .category-tag { background: #e9ecef; color: #495057; font-size: 10px; padding: 3px 8px; border-radius: 10px; display: inline-block; margin-bottom: 5px; }
+        .card-title { font-size: 14px; font-weight: bold; margin: 5px 0; height: 35px; overflow: hidden; }
+        .card-unit { font-size: 12px; color: #888; margin-bottom: 5px; }
+        .store-info { font-size: 12px; padding: 5px; background: #f8f9fa; border-radius: 5px; margin-bottom: 10px; border: 1px solid #eee; text-align: left; }
+        .card-bottom { display: flex; justify-content: space-between; align-items: center; }
+        .price { color: var(--primary); font-weight: bold; font-size: 16px; }
+        .add-btn { background: var(--primary); color: white; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-weight: bold; }
+        .add-btn:disabled { background: #ccc; cursor: not-allowed; }
+        
+        .cart-section, .profile-section, .offers-section { display: none; padding: 15px; background: white; min-height: 100vh; }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #eee; }
+        .cart-info { display: flex; align-items: center; gap: 10px; }
+        .cart-info img { width: 50px; height: 50px; border-radius: 5px; object-fit: cover; }
+        .cart-actions { display: flex; align-items: center; gap: 10px; }
+        .qty-controls { display: flex; align-items: center; gap: 5px; }
+        .qty-btn { width: 25px; height: 25px; border-radius: 50%; border: 1px solid #ccc; background: white; cursor: pointer; font-weight: bold; }
+        .del-btn { color: red; background: none; border: none; cursor: pointer; font-size: 14px; }
+        
+        .cart-total { position: fixed; bottom: 70px; left: 0; right: 0; background: white; padding: 15px; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #eee; z-index: 100; box-shadow: 0 -2px 5px rgba(0,0,0,0.02); }
+        .nav-item { text-align: center; color: #888; cursor: pointer; font-size: 14px; flex: 1; }
+        .nav-item.active { color: var(--primary); font-weight: bold; }
+        .toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 10px 20px; border-radius: 20px; font-size: 14px; opacity: 0; transition: 0.3s; pointer-events: none; z-index: 1000; }
+        .toast.show { opacity: 1; }
+
+        .loyalty-card { background: linear-gradient(135deg, #ff5000, #ff9000); padding: 15px; border-radius: 15px; text-align: center; color: white; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .barcode-container { background: white; padding: 15px; border-radius: 10px; width: 80%; max-width: 350px; margin: 0 auto; display: block; box-sizing: border-box; }
+        #barcode { width: 100% !important; height: auto !important; }
+        #barcode text { font-size: 16px; } 
+
+        .profile-section input.profile-input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; background: white; color: var(--text); }
+        .profile-section input.profile-input[readonly] { background-color: #f9f9f9; color: #777; border-color: transparent; }
+
+        .coupon-card { border: 2px dashed #ff5000; background: #fff5f0; padding: 15px; border-radius: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .coupon-info h4 { margin: 0 0 5px 0; color: #ff5000; }
+        .coupon-info p { margin: 0; font-size: 12px; color: #666; }
+        .coupon-btn { background: #ff5000; color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; }
+        .coupon-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+        @media (min-width: 768px) {
+            .container { max-width: 800px; margin: 0 auto; align-items: flex-start; }
+            .bottom-nav { border-radius: 10px; width: 100%; position: static; margin: 20px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+            .toast { bottom: 30px; }
+            body { padding-bottom: 20px; }
+            .cart-total { position: static; margin-top: 20px; border: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <input type="text" class="search-bar" id="search" placeholder="Search..." onkeyup="applyFilters()">
+    <select class="lang-select" id="lang-select" onchange="changeLang()">
+        <option value="zh">ZH</option>
+        <option value="en">EN</option>
+        <option value="fi">FI</option>
+    </select>
+</div>
+
+<div class="container">
+    
+    <div class="main-content" id="page-home">
+        <div class="controls-bar" id="page-controls" style="display:flex;">
+            <select id="category-filter" onchange="applyFilters()"></select>
+            <select id="sort-by" onchange="applyFilters()">
+                <option value="name" id="opt-name">名称</option>
+                <option value="price" id="opt-price">价格</option>
+                <option value="stock" id="opt-stock">库存</option>
+            </select>
+            <select id="sort-order" onchange="applyFilters()">
+                <option value="asc" id="opt-asc">升序</option>
+                <option value="desc" id="opt-desc">降序</option>
+            </select>
+        </div>
+        <div id="promotions"></div>
+        <div class="product-grid" id="products"></div>
+    </div>
+
+    <div class="offers-section" id="page-offers">
+        <h3 id="t-offers-title">🎟️ 优惠和优惠券</h3>
+        <div id="coupons-list"></div>
+    </div>
+
+    <div class="cart-section" id="page-cart">
+        <h3 id="t-cart">🛒 购物车</h3>
+        <div class="controls-bar" id="cart-controls" style="display:flex;">
+            <select id="cart-category-filter" onchange="applyCartFilters()"></select>
+            <select id="cart-sort-by" onchange="applyCartFilters()">
+                <option value="name" id="c-opt-name">名称</option>
+                <option value="price" id="c-opt-price">价格</option>
+                <option value="qty" id="c-opt-qty">数量</option>
+            </select>
+            <select id="cart-sort-order" onchange="applyCartFilters()">
+                <option value="asc" id="c-opt-asc">升序</option>
+                <option value="desc" id="c-opt-desc">降序</option>
+            </select>
+        </div>
+
+        <div id="cart"></div>
+        <div class="cart-total">
+            <span><span id="t-total">总计</span>: <b style="color:var(--primary); font-size: 18px;">￥<span id="total-price">0.00</span></b></span>
+            <button id="t-checkout" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:20px;">结算</button>
+        </div>
+    </div>
+
+    <div class="profile-section" id="page-profile">
+        <h3 id="t-profile-title">👤 用户资料</h3>
+        
+        <div class="loyalty-card">
+            <div id="t-loyalty-title" style="font-weight: bold; margin-bottom: 8px;">超市电子会员卡</div>
+            <div class="barcode-container">
+                <svg id="barcode"></svg>
+            </div>
+            <div id="t-barcode-timer" style="font-size: 11px; margin-top: 8px;">距离下次刷新: 60s</div>
+        </div>
+
+        <div class="card" style="text-align: left;">
+            <p><b id="t-username-label">用户名:</b> <span id="profile-username" style="color: var(--primary); font-weight: bold;"></span></p>
+            
+            <label id="t-email" style="font-size: 13px; color: #666; display: block; margin-bottom: 3px;">邮箱</label>
+            <input type="email" id="profile-email" class="profile-input" readonly placeholder="example@mail.com">
+            
+            <label id="t-phone" style="font-size: 13px; color: #666; display: block; margin-bottom: 3px;">电话</label>
+            <input type="text" id="profile-phone" class="profile-input" readonly placeholder="1234567890">
+            
+            <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; font-size: 14px; color: #555;">
+                <input type="checkbox" id="profile-consent" disabled style="width: 18px; height: 18px;">
+                <span id="t-consent">同意接收促销信息</span>
+            </label>
+            
+            <button id="t-edit-profile" onclick="enableProfileEdit()" style="background:#f4f4f4; color:#333; border: 1px solid #ddd; padding:12px; border-radius:20px; width: 100%; font-weight: bold;">编辑资料</button>
+            <button id="t-save-profile" onclick="saveProfile()" style="display:none; background:var(--primary); color:white; border:none; padding:12px; border-radius:20px; width: 100%; font-weight: bold;">保存资料</button>
+        </div>
+    </div>
+</div>
+
+<div class="bottom-nav">
+    <div class="nav-item active" id="nav-home" onclick="switchTab('home', this)">首页</div>
+    <div class="nav-item" id="nav-offers" onclick="switchTab('offers', this)">优惠</div>
+    <div class="nav-item" id="nav-cart" onclick="switchTab('cart', this)">购物车</div>
+    <div class="nav-item" id="nav-profile" onclick="switchTab('profile', this)">我的</div>
+    <div class="nav-item" id="nav-out" onclick="logout()">退出</div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+    // 从本地缓存获取当前登录的用户名 / Get logged-in username from local storage
+    const username = localStorage.getItem('username');
+    // 如果未登录，跳转回登录页 / Redirect to login page if not logged in
+    if (!username) window.location.href = 'index.html';
+
+    // 全局数据存储变量 / Global data storage variables
+    let allProducts = [];
+    let cartItems = [];
+    let promoData = [];
+    let availableCoupons = [];
+    let myActivatedCoupons = [];
+    let toastTimeout;
+    let barcodeInterval;
+    let barcodeTimerInterval;
+    let timeLeft = 60;
+    
+    // 设置当前使用的语言，默认使用中文 / Set current language, default is Chinese
+    let currentLang = localStorage.getItem('lang') || 'zh';
+    document.getElementById('lang-select').value = currentLang;
+
+    let dict = {};
+    let wordDict = {};
+
+    // 根据当前语言翻译商品名称 / Translate product name based on current language
+    function translateName(name) {
+        if (currentLang === 'en') return name;
+        
+        // 直接匹配完整的商品名称 / Match full product name directly
+        if (wordDict[currentLang] && wordDict[currentLang][name]) {
+            return wordDict[currentLang][name];
+        }
+        
+        // 如果找不到完整翻译，原样返回英文 / Return original English if full translation is not found
+        return name;
+    }
+
+    // 切换系统语言并重新渲染界面 / Switch system language and re-render UI
+    function changeLang() {
+        currentLang = document.getElementById('lang-select').value;
+        localStorage.setItem('lang', currentLang);
+        updateUI();
+        applyFilters(); 
+        applyCartFilters();
+        renderCoupons();
+        updateBarcodeTimerText();
+    }
+
+    // 更新界面上的静态文本 / Update static text on the UI
+    function updateUI() {
+        const d = dict[currentLang];
+        document.getElementById('search').placeholder = d.search;
+        document.getElementById('nav-home').innerText = d.home;
+        document.getElementById('nav-offers').innerText = d.offers;
+        document.getElementById('nav-cart').innerText = d.cart;
+        document.getElementById('nav-profile').innerText = d.profile;
+        document.getElementById('nav-out').innerText = d.out;
+        
+        document.getElementById('t-offers-title').innerText = d.offersTitle;
+        document.getElementById('t-cart').innerText = `🛒 ${d.cart}`;
+        document.getElementById('t-total').innerText = d.total;
+        document.getElementById('t-checkout').innerText = d.checkout;
+        
+        document.getElementById('opt-name').innerText = d.name;
+        document.getElementById('opt-price').innerText = d.price;
+        document.getElementById('opt-stock').innerText = d.stock;
+        document.getElementById('opt-asc').innerText = d.asc;
+        document.getElementById('opt-desc').innerText = d.desc;
+
+        document.getElementById('c-opt-name').innerText = d.name;
+        document.getElementById('c-opt-price').innerText = d.price;
+        document.getElementById('c-opt-qty').innerText = d.qty;
+        document.getElementById('c-opt-asc').innerText = d.asc;
+        document.getElementById('c-opt-desc').innerText = d.desc;
+
+        document.getElementById('t-profile-title').innerText = d.profileTitle;
+        document.getElementById('t-username-label').innerText = d.usernameLabel;
+        document.getElementById('t-email').innerText = d.email;
+        document.getElementById('t-phone').innerText = d.phone;
+        document.getElementById('t-consent').innerText = d.consent;
+        document.getElementById('t-edit-profile').innerText = d.edit;
+        document.getElementById('t-save-profile').innerText = d.save;
+        document.getElementById('t-loyalty-title').innerText = d.loyaltyTitle;
+
+        document.getElementById('profile-email').placeholder = "example@mail.com";
+        document.getElementById('profile-phone').placeholder = "1234567890";
+
+        populateCategories('category-filter', allProducts);
+        populateCategories('cart-category-filter', cartItems);
+        renderPromotions();
+    }
+
+    // 页面初始化：拉取所有数据并渲染 / Page initialization: fetch all data and render
+    async function init() {
+        const langRes = await fetch('/locales.json');
+        const langData = await langRes.json();
+        dict = langData.ui;
+        wordDict = langData.words;
+
+        const promoRes = await fetch('/api/promotions');
+        promoData = await promoRes.json();
+
+        const couponRes = await fetch('/api/coupons');
+        availableCoupons = await couponRes.json();
+
+        const prodRes = await fetch('/api/products');
+        allProducts = await prodRes.json();
+        
+        await Promise.all([fetchCartData(), loadProfile()]);
+        
+        updateUI();
+        applyFilters();
+        renderCoupons();
+        startBarcodeTimer();
+    }
+
+    // 渲染顶部促销横幅 / Render top promotional banners
+    function renderPromotions() {
+        document.getElementById('promotions').innerHTML = promoData.map(p => 
+            `<div class="banner">${dict[currentLang][p.titleKey]} - ${dict[currentLang][p.detailKey]}</div>`
+        ).join('');
+    }
+
+    // 渲染优惠券列表 / Render coupon list
+    function renderCoupons() {
+        const d = dict[currentLang];
+        document.getElementById('coupons-list').innerHTML = availableCoupons.map(c => {
+            const isActivated = myActivatedCoupons.includes(c.id);
+            const btnText = isActivated ? d.activated : d.activate;
+            const btnState = isActivated ? 'disabled' : '';
+            
+            const couponName = c.name[currentLang] || c.name['zh'];
+            const couponDesc = c.desc[currentLang] || c.desc['zh'];
+
+            return `
+            <div class="coupon-card">
+                <div class="coupon-info">
+                    <h4>${couponName}</h4>
+                    <p>${couponDesc}</p>
+                </div>
+                <button class="coupon-btn" onclick="activateCoupon('${c.id}')" ${btnState}>${btnText}</button>
+            </div>
+            `;
+        }).join('');
+    }
+
+    // 发送请求激活特定优惠券 / Send request to activate a specific coupon
+    async function activateCoupon(couponId) {
+        try {
+            const res = await fetch(`/api/user/${username}/coupon`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ couponId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                myActivatedCoupons = data.activatedCoupons;
+                renderCoupons();
+            }
+        } catch (e) { console.error('Error activating coupon', e); }
+    }
+
+    // 填充下拉过滤器的分类选项 / Populate category options for the dropdown filter
+    function populateCategories(elementId, dataArray) {
+        const catSelect = document.getElementById(elementId);
+        const currentVal = catSelect.value;
+        catSelect.innerHTML = `<option value="all">${dict[currentLang].all}</option>`;
+        
+        const categories = [...new Set(dataArray.map(p => p.category).filter(Boolean))];
+        categories.forEach(c => {
+            const option = document.createElement('option');
+            option.value = c;
+            option.innerText = dict[currentLang][c] || c;
+            catSelect.appendChild(option);
+        });
+        
+        if (currentVal && currentVal !== 'all') catSelect.value = currentVal;
+    }
+
+    // 执行搜索、分类过滤和商品排序 / Execute search, category filtering, and product sorting
+    function applyFilters() {
+        const query = document.getElementById('search').value.toLowerCase();
+        const category = document.getElementById('category-filter').value;
+        const sortBy = document.getElementById('sort-by').value;
+        const sortOrder = document.getElementById('sort-order').value;
+
+        let filtered = allProducts.filter(p => p.name.toLowerCase().includes(query) || translateName(p.name).toLowerCase().includes(query));
+        if (category !== 'all') filtered = filtered.filter(p => p.category === category);
+
+        let mod = sortOrder === 'asc' ? 1 : -1;
+        filtered.sort((a, b) => {
+            if (sortBy === 'name') return translateName(a.name).localeCompare(translateName(b.name)) * mod;
+            if (sortBy === 'price') return (a.price - b.price) * mod;
+            if (sortBy === 'stock') return (a.stock - b.stock) * mod;
+            return 0;
+        });
+
+        renderProducts(filtered);
+    }
+
+    // 生成并显示商品卡片网格 / Generate and display product card grid
+    function renderProducts(products) {
+        const d = dict[currentLang];
+        document.getElementById('products').innerHTML = products.map(p => {
+            const stockColor = p.stock < 10 ? 'red' : '#2ea44f';
+            const stockText = p.stock === 0 ? d.soldout : `${d.left}: ${p.stock}`;
+            const btnState = p.stock === 0 ? 'disabled' : '';
+            const catName = d[p.category] || p.category;
+            const displayName = translateName(p.name);
+            const safeName = p.name.replace(/'/g, "\\'");
+
+            return `
+            <div class="card">
+                <img src="${p.image}" alt="${p.name}">
+                <br>
+                <div class="category-tag">${catName}</div>
+                <div class="card-title">${displayName}</div>
+                <div class="card-unit">${p.unit}</div>
+                <div class="store-info">
+                    ${d.aisle}: <b>${p.aisle}</b><br>
+                    <span style="color:${stockColor}; font-weight:bold;">${stockText}</span>
+                </div>
+                <div class="card-bottom">
+                    <div class="price">￥${p.price}</div>
+                    <button class="add-btn" onclick="addToCart('${safeName}', ${p.price}, '${p.image}', '${p.category}')" ${btnState}>+</button>
+                </div>
+            </div>
+            `;
+        }).join('');
+    }
+
+    // 从服务器获取用户的购物车数据 / Fetch user's cart data from the server
+    async function fetchCartData() {
+        const res = await fetch(`/api/items/${username}`);
+        cartItems = await res.json();
+        populateCategories('cart-category-filter', cartItems);
+        applyCartFilters();
+    }
+
+    // 对购物车内的商品进行过滤和排序 / Filter and sort items within the shopping cart
+    function applyCartFilters() {
+        const category = document.getElementById('cart-category-filter').value;
+        const sortBy = document.getElementById('cart-sort-by').value;
+        const sortOrder = document.getElementById('cart-sort-order').value;
+
+        let filtered = [...cartItems];
+        if (category !== 'all') filtered = filtered.filter(p => p.category === category);
+
+        let mod = sortOrder === 'asc' ? 1 : -1;
+        filtered.sort((a, b) => {
+            if (sortBy === 'name') return translateName(a.name).localeCompare(translateName(b.name)) * mod;
+            if (sortBy === 'price') return (a.price - b.price) * mod;
+            if (sortBy === 'qty') return (a.quantity - b.quantity) * mod;
+            return 0;
+        });
+
+        renderCart(filtered);
+    }
+
+    // 渲染购物车列表及计算总价 / Render cart list and calculate total price
+    function renderCart(itemsToRender) {
+        const d = dict[currentLang];
+        document.getElementById('cart').innerHTML = itemsToRender.map(item => {
+            const displayName = translateName(item.name);
+            return `
+            <div class="cart-item">
+                <div class="cart-info">
+                    <img src="${item.image}" alt="img">
+                    <div>
+                        <div style="font-weight:bold; font-size:14px;">${displayName}</div>
+                        <div style="color:var(--primary); margin-top:5px;">￥${item.price}</div>
+                    </div>
+                </div>
+                <div class="cart-actions">
+                    <div class="qty-controls">
+                        <button class="qty-btn" onclick="updateQty('${item._id}', 'decrease')">-</button>
+                        <span>${item.quantity}</span>
+                        <button class="qty-btn" onclick="updateQty('${item._id}', 'increase')">+</button>
+                    </div>
+                    <button class="del-btn" onclick="del('${item._id}')">${d.remove}</button>
+                </div>
+            </div>
+        `}).join('');
+        
+        let absoluteTotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        document.getElementById('total-price').innerText = absoluteTotal.toFixed(2);
+    }
+
+    // 加载用户个人资料与设置 / Load user profile and settings
+    async function loadProfile() {
+        document.getElementById('profile-username').innerText = username;
+        try {
+            const res = await fetch(`/api/user/${username}`);
+            if (res.ok) {
+                const data = await res.json();
+                document.getElementById('profile-email').value = data.email || '';
+                document.getElementById('profile-phone').value = data.phone || '';
+                document.getElementById('profile-consent').checked = Boolean(data.consent && data.consent.marketing);
+                myActivatedCoupons = data.activatedCoupons || [];
+                disableProfileEditMode();
+            } else { showToast('profileError'); }
+        } catch (e) { console.error('Profile Load Error:', e); showToast('profileError'); }
+    }
+
+    // 开启个人资料编辑模式 / Enable profile edit mode
+    function enableProfileEdit() {
+        const inputs = document.querySelectorAll('.profile-input');
+        inputs.forEach(input => input.removeAttribute('readonly'));
+        document.getElementById('profile-consent').removeAttribute('disabled');
+        document.getElementById('t-edit-profile').style.display = 'none';
+        document.getElementById('t-save-profile').style.display = 'block';
+    }
+
+    // 关闭编辑模式并锁定输入框 / Disable edit mode and lock input fields
+    function disableProfileEditMode() {
+        const inputs = document.querySelectorAll('.profile-input');
+        inputs.forEach(input => input.setAttribute('readonly', true));
+        document.getElementById('profile-consent').setAttribute('disabled', true);
+        document.getElementById('t-edit-profile').style.display = 'block';
+        document.getElementById('t-save-profile').style.display = 'none';
+    }
+
+    // 提交并保存修改后的用户资料 / Submit and save modified user profile
+    async function saveProfile() {
+        const email = document.getElementById('profile-email').value.trim();
+        const phone = document.getElementById('profile-phone').value.trim();
+        const consent = document.getElementById('profile-consent').checked;
+        
+        try {
+            await fetch(`/api/user/${username}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, phone, marketingConsent: consent, privacyAccepted: consent })
+            });
+            showToast('saved');
+            disableProfileEditMode();
+        } catch (e) { console.error('Save Profile Error:', e); }
+    }
+
+    // 在屏幕底部显示短暂的提示信息 / Show a brief toast message at the bottom of the screen
+    function showToast(key) {
+        const toast = document.getElementById('toast');
+        toast.innerText = dict[currentLang][key] || key;
+        toast.classList.add('show');
+        clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => { toast.classList.remove('show'); }, 2000);
+    }
+
+    // 生成 10 位动态会员码并渲染为条形码 / Generate 10-digit dynamic loyalty code and render as barcode
+    function updateBarcode() {
+        let numPrefix = 0;
+        for (let i = 0; i < username.length; i++) {
+            numPrefix += username.charCodeAt(i);
+        }
+        const prefix = (numPrefix % 10000).toString().padStart(4, '0');
+        const timestamp = Math.floor(Date.now() / 60000).toString().slice(-6); 
+        const dynamicCode = `${prefix}${timestamp}`;
+        
+        JsBarcode("#barcode", dynamicCode, {
+            format: "CODE128",
+            lineColor: "#000",
+            width: 2, 
+            height: 50, 
+            displayValue: true,
+            margin: 0
+        });
+        
+        timeLeft = 60;
+        updateBarcodeTimerText();
+    }
+
+    // 更新条形码下方的倒计时文本 / Update the countdown text below the barcode
+    function updateBarcodeTimerText() {
+        document.getElementById('t-barcode-timer').innerText = `${dict[currentLang].refresh}: ${timeLeft}s`;
+    }
+
+    // 启动条形码 60 秒自动刷新定时器 / Start the 60-second auto-refresh timer for the barcode
+    function startBarcodeTimer() {
+        updateBarcode();
+        clearInterval(barcodeInterval);
+        clearInterval(barcodeTimerInterval);
+        
+        barcodeInterval = setInterval(updateBarcode, 60000);
+        barcodeTimerInterval = setInterval(() => {
+            timeLeft--;
+            updateBarcodeTimerText();
+        }, 1000);
+    }
+
+    // 将选中的商品加入购物车 / Add selected item to the shopping cart
+    async function addToCart(name, price, image, category) {
+        await fetch('/api/items', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, name, price, image, category })
+        });
+        await fetchCartData();
+        showToast('added');
+    }
+
+    // 增加或减少购物车内特定商品的数量 / Increase or decrease quantity of a specific item in the cart
+    async function updateQty(id, action) {
+        await fetch(`/api/items/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }) });
+        await fetchCartData();
+    }
+
+    // 从购物车中彻底移除特定商品 / Completely remove a specific item from the shopping cart
+    async function del(id) {
+        await fetch(`/api/items/${id}`, { method: 'DELETE' });
+        await fetchCartData();
+    }
+
+    // 切换底部导航栏的不同视图页面 / Switch between different view pages of the bottom navigation
+    function switchTab(tab, element) {
+        const views = ['page-home', 'page-offers', 'page-cart', 'page-profile'];
+        views.forEach(view => document.getElementById(view).style.display = 'none');
+        document.getElementById(`page-${tab}`).style.display = 'block';
+
+        document.getElementById('page-controls').style.display = tab === 'home' ? 'flex' : 'none';
+        
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        element.classList.add('active');
+
+        if (tab === 'profile') {
+            updateBarcode();
+        }
+    }
+
+    // 清除本地登录信息并退出账号 / Clear local login info and log out
+    function logout() {
+        localStorage.clear();
+        window.location.href = 'index.html';
+    }
+
+    init();
+</script>
+</body>
+</html>

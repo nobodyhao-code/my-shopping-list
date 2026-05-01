@@ -1,0 +1,50 @@
+[
+  {
+    "id": "product-apple",
+    "name": "Apple",
+    "price": 1.5,
+    "category": "Groceries"
+  },
+  {
+    "id": "product-milk",
+    "name": "Milk",
+    "price": 2.2,
+    "category": "Groceries"
+  },
+  {
+    "id": "product-coffee",
+    "name": "Coffee",
+    "price": 6.1,
+    "category": "Beverages"
+  },
+  {
+    "id": "product-bread",
+    "name": "Bread",
+    "price": 3.1,
+    "category": "Bakery"
+  },
+  {
+    "id": "product-banana",
+    "name": "Banana",
+    "price": 1.9,
+    "category": "Groceries"
+  },
+  {
+    "id": "product-orange-juice",
+    "name": "Orange Juice",
+    "price": 2.8,
+    "category": "Beverages"
+  },
+  {
+    "id": "product-eggs",
+    "name": "Eggs 12 pcs",
+    "price": 4.1,
+    "category": "Groceries"
+  },
+  {
+    "id": "product-blueberries",
+    "name": "Blueberries 250g",
+    "price": 4.8,
+    "category": "Groceries"
+  }
+]

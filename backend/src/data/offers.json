@@ -1,0 +1,32 @@
+[
+  {
+    "id": "offer-welcome-2",
+    "name": "Welcome €2 Coupon",
+    "image": "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=900&q=80",
+    "validityPeriod": "2026-03-01 to 2026-06-30",
+    "validFrom": "2026-03-01",
+    "validTo": "2026-06-30",
+    "description": "Save €2 on any basket over €15. Perfect for first-time sign-ins.",
+    "couponCode": "WELCOME2"
+  },
+  {
+    "id": "offer-weekend-5",
+    "name": "Weekend Basket Deal",
+    "image": "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=900&q=80",
+    "validityPeriod": "2026-03-20 to 2026-05-31",
+    "validFrom": "2026-03-20",
+    "validTo": "2026-05-31",
+    "description": "Get €5 off when your total is above €50 during the weekend.",
+    "couponCode": "WEEKEND5"
+  },
+  {
+    "id": "offer-coffee-combo",
+    "name": "Coffee & Pastry Combo",
+    "image": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=900&q=80",
+    "validityPeriod": "2026-03-15 to 2026-04-30",
+    "validFrom": "2026-03-15",
+    "validTo": "2026-04-30",
+    "description": "Bundle offer for one coffee and one pastry at a sweeter price.",
+    "couponCode": "CAFECOMBO"
+  }
+]

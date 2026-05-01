@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login or Register</title>
+    <style>
+        /* 页面基础样式与居中布局 / Basic page styles and centered layout */
+        body { font-family: sans-serif; background-color: #f4f4f4; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        
+        /* 语言切换器定位 / Language selector positioning */
+        .lang-select { position: absolute; top: 20px; right: 20px; padding: 5px; border-radius: 5px; }
+        
+        /* 主卡片面板样式 / Main card panel styles */
+        .card { background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
+        h2 { margin-bottom: 20px; color: #333; }
+        
+        /* 输入框通用样式 / General input field styles */
+        input[type="text"], input[type="password"], input[type="email"] { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        
+        /* 选填项标签样式 / Optional field label styles */
+        label.optional { display: block; text-align: left; font-size: 12px; color: #888; margin-top: -10px; margin-bottom: 5px; }
+        
+        /* 按钮通用样式与悬停动画 / General button styles and hover animation */
+        button { width: 100%; padding: 10px; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 10px; font-weight: bold; transition: background 0.2s; }
+        .btn-login { background-color: #ff5000; color: white; }
+        .btn-reg { background-color: #eee; color: #333; }
+        .btn-login:hover { background-color: #e04500; }
+        
+        /* 顶部提示弹窗样式 / Top toast notification popup styles */
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); color: white; padding: 10px 20px; border-radius: 20px; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000; }
+        .toast.show { opacity: 1; top: 40px; }
+    </style>
+</head>
+<body>
+    <select class="lang-select" id="lang-select" onchange="changeLang()">
+        <option value="zh">ZH</option>
+        <option value="en">EN</option>
+        <option value="fi">FI</option>
+    </select>
+
+    <div class="card">
+        <h2 id="t-title">登录你的清单</h2>
+        
+        <input type="text" id="username" placeholder="输入用户名">
+        <input type="password" id="password" placeholder="输入密码">
+        
+        <button class="btn-login" id="t-login" onclick="auth('login')">登录</button>
+        <div id="or-divider" style="margin: 15px 0; color: #ccc;">──────── OR ────────</div>
+        
+        <div id="registration-form" style="display:none; text-align: left;">
+            <p id="t-optional-prompt" style="font-size: 13px; color: #666; text-align: center; margin-bottom: 15px;">注册将创建您的新账户。</p>
+            
+            <label id="t-email-label" class="optional">邮箱 (选填)</label>
+            <input type="email" id="reg-email" placeholder="example@mail.com">
+            
+            <label id="t-phone-label" class="optional">电话 (选填)</label>
+            <input type="text" id="reg-phone" placeholder="1234567890">
+            
+            <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; font-size: 14px; color: #555;">
+                <input type="checkbox" id="reg-consent" style="width: 18px; height: 18px;">
+                <span id="t-consent">同意接收促销信息 (选填)</span>
+            </label>
+        </div>
+
+        <button class="btn-reg" id="t-show-reg" onclick="showRegistrationForm()">注册账号</button>
+        <button class="btn-reg" id="t-submit-reg" onclick="auth('register')" style="display:none; background-color:#ff5000; color:white;">提交注册</button>
+        
+        <button class="btn-reg" id="t-back-login" onclick="hideRegistrationForm()" style="display:none; background-color: transparent; color: #888; text-decoration: underline; margin-top: 5px;">已有账号，返回登录</button>
+    </div>
+    
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // 本地化语言字典配置 / Localization language dictionary configuration
+        const dict = {
+            zh: { title: '登录你的清单', user: '输入用户名', pass: '输入密码', login: '登录', showReg: '注册账号', submitReg: '提交注册', or: '──────── 或 ────────', optionalPrompt: '选填信息将完善您的档案', email: '邮箱 (选填)', phone: '电话 (选填)', consent: '同意接收促销信息 (选填)', err1: '用户名和密码是必填项', err2: '账号或密码错误', networkError: '网络错误', exists: '用户名已存在', regok: '注册成功，请登录', backLogin: '已有账号，返回登录', pwdFormat: '密码需8-20位，含大小写字母及特殊字符' },
+            en: { title: 'Login to App', user: 'Username', pass: 'Password', login: 'Login', showReg: 'Register Now', submitReg: 'Submit Registration', or: '──────── OR ────────', optionalPrompt: 'Optional info helps your profile', email: 'Email (Optional)', phone: 'Phone (Optional)', consent: 'Consent to promotions (Optional)', err1: 'Username and Password are required', err2: 'Invalid credentials', networkError: 'Network Error', exists: 'User exists', regok: 'Registered. Please login', backLogin: 'Have an account? Login', pwdFormat: 'Password must be 8-20 chars, with upper/lowercase & special chars' },
+            fi: { title: 'Kirjaudu sisään', user: 'Käyttäjätunnus', pass: 'Salasana', login: 'Kirjaudu', showReg: 'Rekisteröidy nyt', submitReg: 'Lähetä rekisteröinti', or: '──────── TAI ────────', optionalPrompt: 'Valinnainen tieto auttaa profiiliasi', email: 'Sähköposti (Valinnainen)', phone: 'Puhelin (Valinnainen)', consent: 'Hyväksy tarjoukset (Valinnainen)', err1: 'Käyttäjätunnus ja Salasana vaaditaan', err2: 'Virheelliset tiedot', networkError: 'Verkkovirhe', exists: 'Käyttäjä on jo', regok: 'Rekisteröity. Kirjaudu', backLogin: 'Onko sinulla tili? Kirjaudu', pwdFormat: 'Salasanan on oltava 8-20 merkkiä, sis. ison/pienen kirjaimen ja erikoismerkin' }
+        };
+
+        // 获取并设置当前缓存的语言，默认中文 / Get and set cached language, default Chinese
+        let currentLang = localStorage.getItem('lang') || 'zh';
+        document.getElementById('lang-select').value = currentLang;
+        updateUI(); // 初始化页面文本 / Initialize page text
+
+        // 处理用户切换语言操作 / Handle user language switch action
+        function changeLang() {
+            currentLang = document.getElementById('lang-select').value;
+            localStorage.setItem('lang', currentLang);
+            updateUI();
+        }
+
+        // 根据所选语言更新所有界面元素的文本 / Update text of all UI elements based on selected language
+        function updateUI() {
+            const d = dict[currentLang];
+            document.getElementById('t-title').innerText = d.title;
+            document.getElementById('username').placeholder = d.user;
+            document.getElementById('password').placeholder = d.pass;
+            document.getElementById('t-login').innerText = d.login;
+            document.getElementById('t-show-reg').innerText = d.showReg;
+            document.getElementById('t-submit-reg').innerText = d.submitReg;
+            document.getElementById('or-divider').innerText = d.or;
+            document.getElementById('t-optional-prompt').innerText = d.optionalPrompt;
+            document.getElementById('t-email-label').innerText = d.email;
+            document.getElementById('reg-email').placeholder = "example@mail.com";
+            document.getElementById('t-phone-label').innerText = d.phone;
+            document.getElementById('reg-phone').placeholder = "1234567890";
+            document.getElementById('t-consent').innerText = d.consent;
+            document.getElementById('t-back-login').innerText = d.backLogin;
+        }
+
+        // 控制顶部提示弹窗显示时间的计时器 / Timer to control top toast display duration
+        let toastTimeout;
+        function showToast(key) {
+            const toast = document.getElementById('toast');
+            toast.innerText = dict[currentLang][key] || key; // 读取翻译词典 / Read from translation dict
+            toast.classList.add('show');
+            clearTimeout(toastTimeout);
+            
+            // 两秒后自动消失 / Auto-hide after 2 seconds
+            toastTimeout = setTimeout(() => { toast.classList.remove('show'); }, 2000);
+        }
+
+        // 隐藏登录元素，展开注册表单 / Hide login elements, expand registration form
+        function showRegistrationForm() {
+            document.getElementById('t-login').style.display = 'none';
+            document.getElementById('or-divider').style.display = 'none';
+            document.getElementById('t-show-reg').style.display = 'none';
+            document.getElementById('t-submit-reg').style.display = 'block';
+            document.getElementById('registration-form').style.display = 'block';
+            document.getElementById('t-back-login').style.display = 'block';
+        }
+
+        // 隐藏注册表单，恢复登录界面 / Hide registration form, restore login UI
+        function hideRegistrationForm() {
+            document.getElementById('t-login').style.display = 'block';
+            document.getElementById('or-divider').style.display = 'block';
+            document.getElementById('t-show-reg').style.display = 'block';
+            document.getElementById('t-submit-reg').style.display = 'none';
+            document.getElementById('registration-form').style.display = 'none';
+            document.getElementById('t-back-login').style.display = 'none';
+        }
+
+        // 处理登录和注册的后台交互逻辑 / Handle backend interaction logic for login and registration
+        async function auth(action) {
+            // 读取输入框内容并去除首尾空格 / Read input values and trim whitespace
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            
+            // 拦截空白输入 / Block empty inputs
+            if (!username || !password) return showToast('err1');
+
+            let body = { username, password };
+            
+            // 如果是注册动作，追加选填的个人资料 / Append optional profile data if action is register
+            if (action === 'register') {
+                /*
+                // 密码复杂度检测 (未来可启用) / Password complexity check (For future use)
+                // 规则：8到20个字符，至少包含一个小写字母、一个大写字母和一个特殊字符 / Rule: 8 to 20 characters, requires at least one lowercase letter, one uppercase letter, and one special character
+                const pwdRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[\W_]).{8,20}$/;
+                if (!pwdRegex.test(password)) {
+                    return showToast('pwdFormat');
+                }
+                */
+
+                body.email = document.getElementById('reg-email').value.trim();
+                body.phone = document.getElementById('reg-phone').value.trim();
+                body.consent = document.getElementById('reg-consent').checked;
+            }
+
+            try {
+                // 向服务器发送请求 / Send request to server
+                const res = await fetch(`/${action}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                // 登录成功则跳转至商品列表 / Redirect to product list on successful login
+                if (action === 'login') {
+                    const data = await res.json();
+                    if (data.success) {
+                        localStorage.setItem('username', username); // 本地缓存用户名 / Cache username locally
+                        window.location.href = 'list.html';
+                    } else showToast('err2'); // 账号密码错误 / Invalid credentials
+                } else {
+                    // 处理注册接口返回的文本 / Handle text response from register endpoint
+                    const text = await res.text();
+                    
+                    // 这里处理了后端返回的重复用户名检测结果 / Handles duplicate username check result from backend
+                    if (text === 'exists') showToast('exists');
+                    else if (text === 'success') {
+                        // 注册成功后返回登录界面 / Return to login UI after successful registration
+                        showToast('regok');
+                        hideRegistrationForm();
+                    } else showToast(text);
+                }
+            } catch (err) {
+                console.error('Network Error:', err);
+                showToast('networkError'); // 处理网络断开等异常 / Handle exceptions like network disconnection
+            }
+        }
+    </script>
+</body>
+</html>
